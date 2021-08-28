@@ -1,0 +1,41 @@
+name:                xmonad-krono
+version:             0.1.0.0
+github:              "kronolynx/xmonad"
+license:             BSD3
+author:              "Johann"
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            Web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on GitHub at <https://github.com/kronolynx/xmonad#readme>
+
+ghc-options: -Wall -Wcompat -Wincomplete-record-updates -Wincomplete-uni-patterns -Wredundant-constraints -O2 -j -dynamic
+
+dependencies:
+  - base
+  - xmonad-contrib >= 0.16
+
+source-dirs: src
+
+executables:
+  xmonad:
+    main: xmonad.hs
+    dependencies:
+      - xmonad
+      - containers
+      - split
+      - text
+      - X11 >= 1.10
+  xmobar:
+    main: xmobar.hs
+    dependencies:
+      - xmobar
+    ghc-options: -rtsopts -threaded -with-rtsopts=-N
