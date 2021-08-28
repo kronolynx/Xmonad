@@ -2,12 +2,25 @@
 
 import           System.Environment        (getEnv)
 import           System.IO.Unsafe          (unsafeDupablePerformIO)
-import           Theme.Theme               (base00, base01, base02, base03,
-                                            base04, base05, base06, base07,
-                                            basebg, basefg, myFont)
+import qualified Theme.Theme           as TH
 import           XMonad.Hooks.StatusBar.PP (wrap, xmobarAction, xmobarColor,
                                             xmobarFont)
-import           Xmobar
+import Xmobar
+    ( xmobar,
+      defaultConfig,
+      Command(Com),
+      CommandReader(CommandReader),
+      Date(Date),
+      Monitors(Memory, Cpu),
+      XMonadLog(UnsafeXMonadLog),
+      Exec(alias, run),
+      Runnable(..),
+      XPosition(Static, xpos, ypos, width, height),
+      Border(FullB),
+      Config(font, additionalFonts, textOffset, textOffsets, bgColor,
+             fgColor, borderColor, border, position, alpha, lowerOnStart,
+             hideOnStart, persistent, overrideRedirect, iconOffset, commands,
+             sepChar, alignSep, template) )
 
 -- | Configures how things should be displayed on the bar
 config :: Config
@@ -16,25 +29,32 @@ config =
     { font =
         concatMap
           fontWrap
-          [ myFont
-            -- "xft:FantasqueSans Mono Nerd Font Mono:size=15:antialias=true"
+          [
+            TH.myFont
           , "Noto Sans:size=10:style=Bold"
           , "Noto Color Emoji:size=10:style=Regular"
+          , "Noto Sans CJK SC:size=10:style=Bold"
           , "Noto Sans CJK JP:size=10:style=Bold"
           , "Noto Sans CJK KR:size=10:style=Bold"
           ]
     , additionalFonts =
-        [ "xft:Font Awesome 5 Free Solid:size=10"
-        , "xft:JetBrainsMono Nerd Font:size=14"
+        [
+          "xft:Font Awesome 5 Free Solid:size=10"
+        , "xft:Hack Nerd Font:size=14"
         , "xft:Font Awesome 5 Brands:size=11"
-        , "xft:file\\-icons:size=11"
-        , "xft:JetBrainsMono Nerd Font:size=11"
+        , "xft:Hack Nerd Font:size=14"
+        , "xft:Hack Nerd Font:size=11"
+
+        --   "xft:FonAwesome 5 Free Solid:size=10"
+        -- , "xft:Font Awesome 5 Brands:size=11"
+        -- , "xft:JetBrainsMono Nerd Font:size=14"
+        -- , "xft:JetBrainsMono Nerd Font:size=11"
         ]
     , textOffset = 20
     , textOffsets = [20, 21, 20, 21, 20]
-    , bgColor = basebg
-    , fgColor = basefg
-    , borderColor = base00
+    , bgColor = TH.background
+    , fgColor = TH.foreground
+    , borderColor = TH.darkBlack
     , border = FullB
     , position = Static{xpos = 0, ypos = 0, width = 1920, height = 30}
     , alpha = 255
@@ -42,7 +62,7 @@ config =
     , hideOnStart = False
     , persistent = True
     , overrideRedirect = False
-    , iconRoot = homeDir <> "/.config/xmonad/icons"
+    -- , iconRoot = homeDir <> "/.config/xmonad/icons"
     , iconOffset = -1
     , commands = myCommands
     , sepChar = "%"
@@ -50,13 +70,13 @@ config =
     , template =
         wrap " " " " "%hasIcon%"
           <> inWrapper "%UnsafeXMonadLog%"
-          <> wrap "}" "{"  (inWrapper' (white "\xfb8a"))
+          <> "} {" -- wrap "}" "{"  (inWrapper' (white "\xfb8a"))
           <> concatMap
             inWrapper
-            [ red "%wttr%"
+            [ redWrap "%wttr%"
             , cpuAction "%cpu%"
             , memoryAction "%memory%"
-            , volAction (white "%volwire%")
+            -- , volAction (whiteWrap "%volwire%")
             , dateAction "%date%"
             , "%tray%"
             ]
@@ -68,14 +88,14 @@ config =
   inWrapper :: String -> String
   inWrapper =
     wrap
-      (xmobarColor base00 "" (xmobarFont 5 "\xe0b6"))
-      (xmobarColor base00 "" (xmobarFont 5 "\xe0b4") <> " ")
+      (xmobarColor TH.darkBlack  "" (xmobarFont 5 "\xe0b6"))
+      (xmobarColor TH.darkBlack  "" (xmobarFont 5 "\xe0b4") <> " ")
 
-  inWrapper' :: String -> String
-  inWrapper' =
-    wrap
-      (xmobarColor base00 "" (xmobarFont 5 "\xe0b6"))
-      (xmobarColor base00 "" (xmobarFont 5 "\xe0b4"))
+  -- inWrapper' :: String -> String
+  -- inWrapper' =
+  --   wrap
+  --     (xmobarColor TH.darkBlack "" (xmobarFont 3 "\xe0b6"))
+  --     (xmobarColor TH.darkBlack "" (xmobarFont 3 "\xe0b4"))
 
   cpuAction, memoryAction, dateAction, volAction :: ShowS
   cpuAction x = xmobarAction "pgrep -x htop || alacritty -e htop -s PERCENT_CPU" "1" x
@@ -92,7 +112,7 @@ data HasIcon = HasIcon deriving (Read, Show)
 
 instance Exec HasIcon where
   alias _ = "hasIcon"
-  run _ = return $ xmobarAction "xdotool key super+p" "1" $ darkPurple $ xmobarFont 2 "\xe61f"
+  run _ = return $ xmobarAction "xdotool key super+p" "1" $ brightMagentaWrap $ xmobarFont 2 "\xe61f"
 
 -- | Commands to run xmobar modules on start
 myCommands :: [Runnable]
@@ -102,36 +122,36 @@ myCommands =
   , Run HasIcon
   , Run $ Cpu
     [ "-t"
-    , cyan (xmobarFont 1 "\xf108" <> " <total>%")
+    , cyanWrap (xmobarFont 1 "\xf108" <> " <total>%")
     , "-L"
     , "50"
     , "-H"
     , "85"
     , "--low"
-    , base02 <> "," <> background
+    , TH.darkYellow <> "," <> backgroundWrap
     , "--normal"
-    , base03 <> "," <> background
+    , TH.darkGreen <> "," <> backgroundWrap
     , "--high"
-    , base01 <> "," <> background
+    , TH.darkRed <> "," <> backgroundWrap
     ]
     (2 `seconds`)
   , Run $ Memory
     [ "-t"
-    , purple (xmobarFont 1 "\xf538" <> " <usedratio>%")
+    , magentaWrap (xmobarFont 1 "\xf538" <> " <usedratio>%")
     , "-L"
     , "50"
     , "-H"
     , "85"
     , "--low"
-    , base02 <> "," <> background
+    , TH.darkYellow <> "," <> backgroundWrap
     , "--normal"
-    , base03 <> "," <> background
+    , TH.darkGreen <> "," <> backgroundWrap
     , "--high"
-    , base01 <> "," <> background
+    , TH.darkRed  <> "," <> backgroundWrap
     ]
     (3 `seconds`)
-  , Run $ Date (blue $ xmobarFont 1 "\xf017" <> " %l:%M %p") "date" (30 `seconds`)
-  , Run $ CommandReader ("exec " <> homeDir <> "/.config/xmonad/scripts/volume.sh") "volwire"
+  , Run $ Date (blueWrap $ xmobarFont 1 "\xf017" <> " %l:%M %p") "date" (30 `seconds`)
+  -- , Run $ CommandReader ("exec " <> homeDir <> "/.config/xmonad/scripts/volume.sh") "volwire"
   -- , Run $ CommandReader ("exec " <> homeDir <> "/.config/xmonad/scripts/playerctl.sh") "playerctl"
   , Run $ CommandReader ("exec " <> homeDir <> "/.config/xmonad/scripts/weather.sh bar") "wttr"
   , Run $ Com (homeDir <> "/.config/xmonad/scripts/tray-padding-icon.sh") ["stalonetray"] "tray" 5
@@ -147,19 +167,25 @@ homeDir :: String
 homeDir = unsafeDupablePerformIO (getEnv "HOME")
 
 -- Colors
-background :: String
-background = base00 <> ":5"
+backgroundWrap :: String
+backgroundWrap = TH.darkBlack <> ":5"
 
-red, blue, cyan, purple, white, darkPurple :: String -> String
-red = xmobarColor base01 background
-blue = xmobarColor base04 background
--- green = xmobarColor base02 background
-cyan = xmobarColor base06 background
--- yellow = xmobarColor base03 background
-purple = xmobarColor base05 background
--- gray = xmobarColor "#7a869f" background
-white = xmobarColor base07 background
-darkPurple = xmobarColor "#7b6f9c" ""
+redWrap :: String -> String
+redWrap = xmobarColor TH.darkRed  backgroundWrap
+blueWrap :: String -> String
+blueWrap = xmobarColor TH.brightBlue backgroundWrap
+-- green = xmobarColor greenNormal backgroundWrap
+cyanWrap :: String -> String
+cyanWrap = xmobarColor TH.darkCyan backgroundWrap
+-- yellow = xmobarColor yellowNormal backgroundWrap
+magentaWrap :: String -> String
+magentaWrap = xmobarColor TH.brightMagenta backgroundWrap
+-- gray = xmobarColor blackLight backgroundWrap
+whiteWrap :: String -> String
+whiteWrap = xmobarColor TH.darkWhite  backgroundWrap
+
+brightMagentaWrap :: String -> String
+brightMagentaWrap = xmobarColor TH.brightMagenta  ""
 
 main :: IO ()
 main = xmobar config

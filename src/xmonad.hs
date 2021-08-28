@@ -1,5 +1,4 @@
 {-# LANGUAGE UnicodeSyntax #-}
-{-# LANGUAGE LambdaCase       #-}
 
 
 module Main (main) where
@@ -8,43 +7,36 @@ module Main (main) where
 -- If a type has only one constructor it is imported implicitly with (..)
 --
 --
-import           XMonad                        hiding ( (|||) )
+import           XMonad                              hiding ( (|||) )
 
 import qualified Theme.Theme                         as TH
 
 -- hooks
-import           XMonad.Hooks.EwmhDesktops            ( ewmh )
+import           XMonad.Hooks.EwmhDesktops            ( ewmh, ewmhFullscreen )
 import           XMonad.Hooks.FloatNext               ( floatNextHook )
 import qualified XMonad.Hooks.ManageDocks            as ManageDocks
 import qualified XMonad.Hooks.ManageHelpers          as ManageHelpers
 import qualified XMonad.Hooks.UrgencyHook            as UH
-import           XMonad.Hooks.InsertPosition
-import qualified XMonad.Hooks.DynamicLog             as DL
-
+import XMonad.Hooks.InsertPosition                   ( insertPosition, Focus(Newer),
+                                                      Position(End) )
 
 import           XMonad.Hooks.StatusBar              (StatusBarConfig,
                                                       statusBarProp, withSB)
-import           XMonad.Hooks.StatusBar.PP           (PP (..), filterOutWsPP,
+import           XMonad.Hooks.StatusBar.PP           (PP (..),
                                                       shorten', wrap,
                                                       xmobarAction,
                                                       xmobarBorder, xmobarColor,
                                                       xmobarFont, xmobarStrip)
 
--- import           XMonad.Hooks.DynamicIcons           (IconConfig (..), appIcon,
---                                                       dynamicIconsPP,
---                                                       iconsFmtReplace,
---                                                       iconsGetFocus,
---                                                       wrapUnwords)
-
 -- layouts
 import           XMonad.Layout.Circle                ( Circle(..) )
 import           XMonad.Layout.HintedGrid            ( Grid(GridRatio) )
-import           XMonad.Layout.LayoutCombinators     ( JumpToLayout(JumpToLayout) , (|||))
+import           XMonad.Layout.LayoutCombinators     ( (|||))
 import           XMonad.Layout.Mosaic                ( mosaic )
 import           XMonad.Layout.MultiToggle           ( Toggle(..) , mkToggle1 )
 import           XMonad.Layout.MultiToggle.Instances ( StdTransformers ( MIRROR , NBFULL))
 
-import           XMonad.Layout.NoBorders             ( noBorders )
+import           XMonad.Layout.NoBorders             ( noBorders, smartBorders )
 import           XMonad.Layout.OneBig                ( OneBig(OneBig) )
 import           XMonad.Layout.Reflect               ( REFLECTX(..) , REFLECTY(..))
 import           XMonad.Layout.Renamed               ( Rename(Replace) , renamed)
@@ -56,20 +48,14 @@ import qualified XMonad.Layout.Tabbed                as TB
 import           XMonad.Layout.ThreeColumns          ( ThreeCol(ThreeColMid) )
 import qualified XMonad.Layout.WindowNavigation      as Nav
 import           XMonad.Layout.LayoutModifier        (ModifiedLayout)
+import           XMonad.Layout.Magnifier             (magnifiercz')
+
 
 -- utils
-import qualified XMonad.Util.Cursor                  as Cursor
 import           XMonad.Util.EZConfig                ( checkKeymap , mkKeymap )
-import           XMonad.Util.Run                     ( spawnPipe )
-import           XMonad.Util.Scratchpad              ( scratchpadFilterOutWorkspace )
 import           XMonad.Util.WorkspaceCompare        ( getSortByIndex )
 import           XMonad.Util.Ungrab                  ( unGrab )
-import           XMonad.Util.ClickableWorkspaces     (clickablePP)
-import           XMonad.Util.NamedScratchpad         (NamedScratchpad (NS),
-                                                      customFloating,
-                                                      namedScratchpadAction,
-                                                      namedScratchpadManageHook,
-                                                      scratchpadWorkspaceTag)
+import qualified XMonad.Util.Hacks as Hacks
 
 -- prompt
 import qualified XMonad.Prompt                       as Prompt
@@ -81,14 +67,11 @@ import qualified XMonad.Prompt.Window                as WPrompt
 -- actions
 import qualified XMonad.Actions.CycleWS              as CycleWS
 import           XMonad.Actions.CycleWindows         ( cycleRecentWindows )
-import qualified XMonad.Actions.GridSelect           as GS
-import           XMonad.Actions.GroupNavigation      ( historyHook )
 import           XMonad.Actions.Warp                 ( warpToWindow )
 import           XMonad.Actions.WorkspaceNames       ( swapWithCurrent )
-import           XMonad.Actions.Submap               ( submap )
-import           XMonad.Actions.UpdatePointer        ( updatePointer)
+import           XMonad.Actions.RotSlaves            (rotSlavesDown, rotAllDown)
+import           XMonad.Actions.WithAll              (sinkAll, killAll)
 
-import           XMonad.Config.Desktop               ( desktopConfig )
 import qualified XMonad.StackSet                     as W
 
 import           Control.Monad                       ( liftM2 )
@@ -98,28 +81,25 @@ import qualified Data.Map                            as M
 import qualified Data.Text                           as T
 import           Data.Char                           ( toLower )
 import           Data.Ratio                          ( (%) )
-import           System.Exit                         ( ExitCode(ExitSuccess) , exitWith)
-import           System.IO                           ( Handle , hPutStrLn , hClose)
 import           XMonad.Util.SpawnOnce               (spawnOnce)
-import XMonad.Util.Loggers (xmobarColorL)
+import           XMonad.Util.Loggers                 (xmobarColorL)
+import           Data.Semigroup (All)
+import qualified XMonad.Config.Prime                 as ManageHelpers
+
+import           System.Exit                         (exitSuccess)
 
 ------------------------------------------------------------------------
 -- Main
 --
 main :: IO ()
 main = do
-    -- -- xmobar
---    xmproc <- spawnPipe "xmobar"
---    xmonad $ ewmh $ UH.withUrgencyHook UH.NoUrgencyHook $ myConfig
-        -- { logHook =  myLogHook xmproc >> historyHook }
-     xmonad . withSB mySB $ ewmh $ UH.withUrgencyHook UH.NoUrgencyHook myConfig
-        -- { logHook =  myXmobarLogHook xmproc >> historyHook }
+     xmonad . Hacks.javaHack . withSB mySB . ewmhFullscreen . ewmh $ UH.withUrgencyHook UH.NoUrgencyHook  myConfig
 
 
 ------------------------------------------------------------------------
 -- Config
 --
-myConfig = desktopConfig { borderWidth        = myBorderWidth
+myConfig = def { borderWidth        = myBorderWidth
                , normalBorderColor  = myNormalBorderColor
                , focusedBorderColor = myFocusedBorderColor
                , focusFollowsMouse  = myFocusFollowsMouse
@@ -144,16 +124,13 @@ myScreenCapture = "$HOME/.scripts/screen_shot.sh"
 
 myTerminal :: String
 myTerminal = "alacritty"
--- myTerminal = "xfce4-terminal"
 
 myTmuxTerminal :: String
 myTmuxTerminal = myTerminal ++ " -e tmux attach"
 
 -- Launcher
 myLauncher :: String
--- myLauncher = "rofi -no-lazy-grab -show drun -modi run,drun,window -theme $HOME/.config/rofi/launcher/style -drun-icon-theme \"candy-icons\" "
-
-myLauncher = "rofi -no-lazy-grab -show drun -modi run,drun,window"
+myLauncher = "rofi -show drun -modi run,drun,window"
 
 -- Editor
 myTextEditor :: String
@@ -191,20 +168,7 @@ myPPLayout x = case x of
     _                 -> x
 
 myWorkspaces :: [String]
-myWorkspaces = [show x | x <- [1..16]]
-    -- [ "\xE907" -- 
-    -- , "\xE905" -- 
-    -- , "\xE92D" -- 
-    -- , "\xE948" -- 
-    -- , "\xE929" -- 
-    -- , "\xE93E" -- 
-    -- , "\xE926" -- 
-    -- , "\xE932" -- 
-    -- , "\xE97D" -- 
-    -- , "\xE982" -- 
-    -- , "\xE922" -- 
-    -- , "\xE942" -- 
-    -- ]
+myWorkspaces = map show [1..16 :: Int]
 
 ------------------------------------------------------------------------
 mySpacing :: Integer -> l a -> ModifiedLayout Spacing l a
@@ -222,6 +186,7 @@ mySpacing i = spacingRaw False (Border 0 i 0 i) True (Border i 0 i 0) True
 --
 myLayout =
     ManageDocks.avoidStruts
+        $ smartBorders
   -- Toggles
         $   mkToggle1 NBFULL
         $   mkToggle1 REFLECTX
@@ -241,134 +206,43 @@ myLayout =
   where
     name n = renamed [Replace n] . mySpacing 8
     myTile       = RTile.ResizableTall 1 (3 / 100) (4 / 7) []
-    my3cmi       = ThreeColMid 1 (3 / 100) (1 / 2)
+    my3cmi       = magnifiercz' 1.4 $ ThreeColMid 1 (3 / 100) (1 / 2)
     mySpiral     = spiral (6 / 7)
     myMosaic     = mosaic 2 [3, 2]
     myHintedGrid = GridRatio (4 / 3) False
     myOneBig     = OneBig (4 / 6) (4 / 6)
     myTabbed     = noBorders ( TB.tabbed shrinkText myTabConfig)
 
-------------------------------------------------------------------------
--- Manage Hooks
---
------------------------------------------------------------------------------
--- LOGHOOK
------------------------------------------------------------------------------
-myLogHook :: Handle -> X ()
-myLogHook b =
-    DL.dynamicLogWithPP (myXmobarPP b) >> updatePointer (0.5, 0.5) (0, 0)
-
--- xmobar
---
-myXmobarPP :: Handle -> DL.PP
-myXmobarPP h = DL.xmobarPP
-    {
-      DL.ppOutput  = hPutStrLn h . \s -> " " ++ s
-    , DL.ppCurrent = DL.xmobarColor lightWhite "" . DL.wrap "(" ")"
-    , DL.ppVisible = DL.xmobarColor lightWhite "" . DL.wrap "[" "]"
-    , DL.ppUrgent  = DL.xmobarColor colorRed ""
-    , DL.ppLayout  = myPPLayout
-    , DL.ppTitle   = DL.shorten 30 . DL.wrap " " " "
-    , DL.ppSort    = fmap (. scratchpadFilterOutWorkspace) getSortByIndex
-    , DL.ppSep     = " "
-    , DL.ppWsSep   = " "
-    }
-
--- myXmobarLogHook :: Handle -> X ()
--- myXmobarLogHook b =
---     DL.dynamicLogWithPP (myXmobarPP b) >> updatePointer (0.5, 0.5) (0, 0)
-
-----------------------------------------------------------------------
--- dzen
---
--- myDzenLogHook :: Handle -> X ()
--- myDzenLogHook h = DL.dynamicLogWithPP $ DL.def
---     {
---         DL.ppCurrent           =   DL.dzenColor "#ebac54" "#1B1D1E" . DL.pad
---       , DL.ppVisible           =   DL.dzenColor "white" "#1B1D1E" . DL.pad
---       , DL.ppHidden            =   DL.dzenColor "white" "#1B1D1E" . DL.pad
---       , DL.ppHiddenNoWindows   =   DL.dzenColor "#7b7b7b" "#1B1D1E" . DL.pad
---       , DL.ppUrgent            =   DL.dzenColor "#ff0000" "#1B1D1E" . DL.pad
---       , DL.ppWsSep             =   " "
---       , DL.ppSep               =   "  |  "
---       , DL.ppLayout            =   DL.dzenColor "#ebac54" "#1B1D1E" .
---                                 (\x -> case x of
---                                     -- "ResizableTall"             ->      "^i(" ++ myBitmapsDir ++ "/tall.xbm)"
---                                     -- "Mirror ResizableTall"      ->      "^i(" ++ myBitmapsDir ++ "/mtall.xbm)"
---                                     -- "Full"                      ->      "^i(" ++ myBitmapsDir ++ "/full.xbm)"
---                                     "Simple Float"              ->      "~"
---                                     _                           ->      x
---                                 )
---       , DL.ppTitle             =   (" " ++) . DL.dzenColor "white" "#1B1D1E" . DL.dzenEscape
---       , DL.ppOutput            =   hPutStrLn h
---     }
-----------------------------------------------------------------------
--- xmobar
---
--- myXmobarPP :: Handle -> DL.PP
--- myXmobarPP h = DL.xmobarPP
---     { DL.ppOutput  = hPutStrLn h . \s -> " " ++ s
---     , DL.ppCurrent = DL.xmobarColor lightWhite "" . DL.wrap "(" ")"
---     , DL.ppVisible = DL.xmobarColor lightWhite "" . DL.wrap "[" "]"
---     , DL.ppUrgent  = DL.xmobarColor colorRed ""
---     , DL.ppLayout  = myPPLayout
---     , DL.ppTitle   = DL.shorten 30 . DL.wrap " " " "
---     , DL.ppSort    = fmap (. scratchpadFilterOutWorkspace) getSortByIndex
---     , DL.ppSep     = " "
---     , DL.ppWsSep   = " "
---     }
-
 
 
 mySB :: StatusBarConfig
-mySB = statusBarProp
-  "xmobar"
-  -- (clickablePP =<< dynamicIconsPP myIconConfig (filterOutWsPP [scratchpadWorkspaceTag] myXmobarPP))
-  (clickablePP myXmobarPP)
+mySB = statusBarProp "xmobar" (pure myXmobarPP)
  where
   myXmobarPP :: PP
   myXmobarPP = def
-    { ppSep           = wrapSep " "
-    , ppTitleSanitize = xmobarStrip
-    , ppCurrent       = blue  . xmobarBorder "Bottom" TH.base06 2 . currentWorkspace
-    , ppVisible       = lowWhite .xmobarBorder "Bottom" TH.base07 2 . occupiedWorkspace
-    , ppHidden        = lowWhite . occupiedWorkspace
-    , ppHiddenNoWindows = lowWhite . emptyWorkspace
-    , ppUrgent = magenta . urgentWorkspace
-    , ppWsSep         = xmobarColor "" background "  "
-    , ppTitle         = magenta . xmobarAction "xdotool key Super+shift+c" "2" . shorten 40
-    , ppSort          =  getSortByIndex
-    , ppOrder         = \[ws, l, t, ex] -> [ws, l, ex, t]
-    , ppExtras        = [xmobarColorL TH.base01 background windowCount]
-    , ppLayout        = red . xmobarAction "xdotool key Super+/" "1" . xmobarAction
+    { ppSep             = wrapSep " "
+    , ppTitleSanitize   = xmobarStrip
+    , ppCurrent         = xmobarFont 5 . green  . xmobarBorder "Bottom" TH.darkGreen  2 . currentWorkspace
+    , ppVisible         = xmobarFont 5 . lowWhite .xmobarBorder "Bottom" TH.darkGray 2 . occupiedWorkspace
+    , ppHidden          = xmobarFont 5 . blue . occupiedWorkspace
+    , ppHiddenNoWindows = xmobarFont 5 . gray . emptyWorkspace
+    , ppUrgent          = xmobarFont 5 . red . urgentWorkspace
+    , ppWsSep           = xmobarColor "" background "  "
+    , ppTitle           = brightBlue. xmobarAction "xdotool key Super+shift+c" "2" . shorten 40
+    , ppSort            =  getSortByIndex
+    , ppOrder           = \[ws, l, t, ex] -> [ws, l, ex, t]
+    , ppExtras          = [xmobarColorL TH.darkWhite background windowCount]
+    , ppLayout          = blue . xmobarAction "xdotool key Super+/" "1" . xmobarAction
                             "xdotool key Super+shift+/"
-                            "3"
-                            . (\case
-                                "Tall"            -> "\xf005" -- 
-                                "ThreeCol"        -> "\xfa6a" -- 頻
-                                "Circle"          -> "\xe22e" -- 
-                                "Full"            -> "\xf5b5" -- 
-                                "HintedGrid"      -> "\xfb8a" -- ﮊ
-                                "Horizon"         -> "?"
-                                "Mirror Mosaic"   -> "\xfa73" -- 侀
-                                "Mirror Spiral"   -> "\xfc06" -- ﰆ
-                                "Mirror Tall"     -> "\xf006" -- 
-                                "Mirror ThreeCol" -> "\xfa6e" -- 﩮
-                                "Monocle"         -> "?"
-                                "Mosaic"          -> "\xfa6d" -- 舘
-                                "OneBig"          -> "\xf286" -- 
-                                "Spiral"          -> "\xf306" -- 
-                                "Tabbed"          -> "\xfd35" -- ﴵ
-                                _                 -> "?"
-                              )
+                            "3" . xmobarFont 5 . myPPLayout
     }
    where
     shorten :: Int -> String -> String
     shorten = shorten' "…"
 
     wrapSep :: String -> String
-    wrapSep = wrap (xmobarColor TH.base00 "" (xmobarFont 5 "\xe0b4"))
-                   (xmobarColor TH.base00 "" (xmobarFont 5 "\xe0b6"))
+    wrapSep = wrap (xmobarColor TH.darkBlack "" (xmobarFont 5 "\xe0b4"))
+                   (xmobarColor TH.darkBlack "" (xmobarFont 5 "\xe0b6"))
 
     currentWorkspace :: String -> String
     currentWorkspace _ = "\61713" -- " "
@@ -383,19 +257,15 @@ mySB = statusBarProp
     urgentWorkspace _ = "\62759" -- 
 
     background :: String
-    background = TH.base00 ++ ":5"
+    background = TH.darkBlack  ++ ":5"
 
-    blue, lowWhite, magenta, red :: String -> String
-    magenta  = xmobarColor TH.base05 background
-    blue     = xmobarColor TH.base04 background
-    -- purple   = xmobarColor "#bd93f9" "#2c323a:5"
-    -- lowBlue  = xmobarColor "#8be9fd" "#2c323a:5"
-    -- white    = xmobarColor "#f8f8f2" "#2c323a:5"
-    -- yellow   = xmobarColor "#f1fa8c" "#2c323a:5"
-    red      = xmobarColor TH.base01 background
-    lowWhite = xmobarColor TH.base07 background
-    -- gray     = xmobarColor "" background
-    -- green    = xmobarColor TH.base02 background
+    magenta  = xmobarColor TH.darkMagenta  background
+    brightBlue  = xmobarColor TH.brightBlue background
+    blue     = xmobarColor TH.darkBlue  background
+    red      = xmobarColor TH.darkRed  background
+    lowWhite = xmobarColor TH.darkWhite  background
+    gray     = xmobarColor TH.darkGray background
+    green    = xmobarColor TH.darkGreen  background
 
     -- Get count of available windows on a workspace
     windowCount :: X (Maybe String)
@@ -409,76 +279,68 @@ mySB = statusBarProp
         . W.workspace
         . W.current
         . windowset
+------------------------------------------------------------------------
+-- Prompt
+--
+-- Prompt configuration
+myPrompt :: Prompt.XPConfig
+myPrompt = def
+    { Prompt.font = TH.myFont
+    , Prompt.fgColor           = TH.brightBlue
+    , Prompt.bgColor           = TH.background
+    , Prompt.borderColor       = TH.darkBlack
+    , Prompt.height            = 22
+    , Prompt.promptBorderWidth = 0
+    , Prompt.autoComplete      = Just 100000
+    , Prompt.bgHLight          = TH.darkBlack
+    , Prompt.fgHLight          = TH.brightBlack
+    , Prompt.position          = Prompt.Top
+    , Prompt.maxComplRows      = Just 5
+    , Prompt.searchPredicate   = L.isPrefixOf
+    }
 
-  -- myIconConfig :: IconConfig
-  -- myIconConfig = def { iconConfigIcons  = myIcons
-  --                    , iconConfigFmt    = iconsFmtReplace (wrapUnwords "" "")
-  --                    , iconConfigFilter = iconsGetFocus
-  --                    }
-  --  where
-  --   myIcons :: Query [String]
-  --   myIcons = composeAll
-  --     [ className =? "discord" --> appIcon "<fn=3>\xf392</fn>"
-  --     , className =? "Discord" --> appIcon "<fn=3>\xf268</fn>"
-  --     , className =? "firefox" --> appIcon "<fn=3>\xf269</fn>"
-  --     , className =? "Brave-browser" --> appIcon "<fn=3>\xf268</fn>"
-  --     , className =? "St" --> appIcon "<fn=2>\xe795</fn>"
-  --     , className =? "Alacritty" --> appIcon "<fn=2>\xe795</fn>"
-  --     , className =? "Emacs" --> appIcon "<fn=4>\xe926</fn>"
-  --     , className =? "jetbrains-idea-ce" --> appIcon "<fn=4>\xe926</fn>"
-  --     , className =? "code-oss" --> appIcon "<fn=4>\xe60c</fn>"
-  --     , className =? "Code" --> appIcon "<fn=4>\xe60c</fn>"
-  --     , className =? "Org.gnome.Nautilus" --> appIcon "<fn=1>\xf07b</fn>"
-  --     , className =? "Spotify" --> appIcon "<fn=3>\xf1bc</fn>"
-  --     , className =? "mpv" --> appIcon "<fn=1>\xf03d</fn>"
-  --     , className =? "VirtualBox Manager" --> appIcon "<fn=4>\xea3e</fn>"
-  --     , className =? "Lutris" --> appIcon "<fn=1>\xf11b</fn>"
-  --     , className =? "Sxiv" --> appIcon "<fn=1>\xf03e</fn>"
-  --     ]
+myPromptInfix :: Prompt.XPConfig
+myPromptInfix = myPrompt { Prompt.searchPredicate = L.isInfixOf }
 
+myLayoutPrompt :: X ()
+myLayoutPrompt =
+    inputPromptWithCompl
+            myPrompt { Prompt.autoComplete = Just 1000 }
+            "Layout"
+            (Prompt.mkComplFunFromList'
+                myPrompt { Prompt.autoComplete = Just 1000 } -- TODO why do I need to pass this twice ??
+                [ "1.Tall"
+                , "2.HintedGrid"
+                , "3.OneBig"
+                , "4.Circle"
+                , "5.Mosaic"
+                , "6.ThreeCol"
+                , "7.Spiral"
+                ]
+            )
+        ?+ \l -> sendMessage $ JumpToLayout $ drop 2 l
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
--- myLogHook :: D.Client -> DL.PP
--- myLogHook dbus = def
---     { DL.ppOutput = dbusOutput dbus
---     , DL.ppCurrent = DL.wrap ("%{F" ++ lightBlue ++ "} ") " %{F-}"
---     , DL.ppVisible = DL.wrap ("%{F" ++ colorBlue ++ "} ") " %{F-}"
---     , DL.ppUrgent = DL.wrap ("%{F" ++ colorRed ++ "} ") " %{F-}"
---     , DL.ppHidden = DL.wrap " " " "
---     , DL.ppWsSep = ""
---     , DL.ppSep = " "
---     , DL.ppTitle = myAddSpaces 25
---     }
-
--- -- Emit a DBus signal on log updates
--- dbusOutput :: D.Client -> String -> IO ()
--- dbusOutput dbus str = do
---     let signal = (D.signal objectPath interfaceName memberName) {
---             D.signalBody = [D.toVariant $ UTF8.decodeString str]
---         }
---     D.emit dbus signal
---   where
---     objectPath = D.objectPath_ "/org/xmonad/Log"
---     interfaceName = D.interfaceName_ "org.xmonad.Log"
---     memberName = D.memberName_ "Update"
-
-myAddSpaces :: Int -> String -> String
-myAddSpaces len str = sstr ++ replicate (len - length sstr) ' '
+mySessionPrompt :: X ()
+mySessionPrompt =
+    inputPromptWithCompl
+            myPrompt { Prompt.autoComplete = Just 1000 }
+            "\x23FB " -- ⏻
+            (Prompt.mkComplFunFromList'
+            myPrompt { Prompt.autoComplete = Just 1000 } -- TODO why do I need to pass this twice ??
+            ["1.Lock", "2.Suspend", "3.Reboot", "4.Shutdown", "5.Exit"])
+        ?+ \l -> prompt $ map toLower $ drop 2 l
   where
-    sstr = DL.shorten len str
+    prompt = \x -> case x of
+        "lock"     -> noConfirm x
+        "suspend"  -> noConfirm x
+        "reboot"   -> confirm x
+        "shutdown" -> confirm x
+        "exit"     -> confirmPrompt myPrompt x $ io exitSuccess
+        _ -> noConfirm "lock"
+      where
+        confirm command = confirmPrompt myPrompt command
+            $ spawn ("$HOME/.scripts/i3lock.sh " ++ command)
+        noConfirm command = spawn ("$HOME/.scripts/i3lock.sh " ++ command)
 
 
 myManageHook :: ManageHook
@@ -509,7 +371,9 @@ myManageHook' =
           , [ title =? t --> ManageHelpers.doCenterFloat | t <- myTitleCenterFloats ]
           , [ className =? c --> doShift (myWorkspaces !! ws) | (c, ws) <- myShifts ]
           , [ title =? c --> doShift (myWorkspaces !! ws) | (c, ws) <- myTitleShifts ]
-          -- , [ManageHelpers.isDialog --> ManageHelpers.doCenterFloat]
+          , [(className =? "firefox" <&&> resource =? "Dialog") --> doFloat ] -- Float Firefox Dialog
+          , [ManageHelpers.isFullscreen -->  ManageHelpers.doFullFloat]
+          , [ManageHelpers.isDialog --> ManageHelpers.doFloat]
           ]
   where
     myCenterFloats = ["zenity", "Arandr", "Galculator", "albert"]
@@ -519,7 +383,18 @@ myManageHook' =
         , "Save as..."
         , "Ulauncher Preferences"
         ]
-    myClassFloats = []
+    myClassFloats =
+      [ "confirm"
+      , "file_progress"
+      , "dialog"
+      , "download"
+      , "error"
+      , "Gimp"
+      , "notification"
+      , "pinentry-gtk-2"
+      , "splash"
+      , "toolbar"
+      ]
     myTitleFloats = ["Media viewer", "Yad"]
     myFullFloats  = []
       -- workspace numbers start at 0
@@ -539,6 +414,8 @@ myManageHook' =
         [ ("DevCenter"         , 6)
         ]
 
+
+
 myStartupHook :: X ()
 myStartupHook = do
     checkKeymap myConfig myKeymap
@@ -546,313 +423,44 @@ myStartupHook = do
     spawn "$HOME/.config/xmonad/scripts/autostart.sh"
     spawnOnce
       ("stalonetray --geometry 1x1-17+5 --max-geometry 10x1-17+5 --transparent --tint-color '"
-      ++ TH.base00
+      ++ TH.darkBlack
       ++ "' --tint-level 255 --grow-gravity NE --icon-gravity NW --icon-size 20 --sticky --window-type dock --window-strut top --skip-taskbar"
       )
 
+myHandleEventHook :: Event -> X All
 myHandleEventHook =
-    ManageDocks.docksEventHook <+> handleEventHook desktopConfig
+    ManageDocks.docksEventHook <+> handleEventHook def
 
 ------------------------------------------------------------------------
 -- tabs
 --
-myTabConfig = def { TB.activeColor         = "#556064"
-                  , TB.inactiveColor       = "#2F3D44"
-                  , TB.urgentColor         = "#FDF6E3"
-                  , TB.activeBorderColor   = "#454948"
-                  , TB.inactiveBorderColor = "#454948"
-                  , TB.urgentBorderColor   = "#268BD2"
-                  , TB.activeTextColor     = "#80FFF9"
-                  , TB.inactiveTextColor   = "#1ABC9C"
-                  , TB.urgentTextColor     = "#1ABC9C"
-                  , TB.fontName = "xft:Noto Sans CJK:size=10:antialias=true"
+myTabConfig :: TB.Theme
+myTabConfig = def { TB.activeColor         = myFocusedBorderColor -- "#556064"
+                  , TB.inactiveColor       = myNormalBorderColor -- "#2F3D44"
+                  , TB.urgentColor         = TH.brightMagenta  -- "#FDF6E3"
+                  , TB.activeBorderColor   = myFocusedBorderColor -- "#454948"
+                  , TB.inactiveBorderColor = myNormalBorderColor -- "#454948"
+                  , TB.urgentBorderColor   = TH.brightMagenta  -- "#268BD2"
+                  -- , TB.activeTextColor     =  -- "#80FFF9"
+                  -- , TB.inactiveTextColor   =  -- "#1ABC9C"
+                  -- , TB.urgentTextColor     =  -- "#1ABC9C"
+                  , TB.fontName = TH.myFont -- "xft:Noto Sans CJK:size=10:antialias=true"
                   }
-------------------------------------------------------------------------
--- Prompt
---
--- Prompt configuration
-myPrompt :: Prompt.XPConfig
-myPrompt = def
-    { Prompt.font = "xft:Fantasque Sans Mono Nerd Font:size=14:antialias=true"
-    , Prompt.fgColor           = foreground
-    , Prompt.bgColor           = background
-    , Prompt.borderColor       = colorPromptbg
-    , Prompt.height            = 22
-    , Prompt.promptBorderWidth = 0
-    , Prompt.autoComplete      = Just 100000
-    , Prompt.bgHLight          = colorPromptHLightbg
-    , Prompt.fgHLight          = colorPromptHLightfg
-    , Prompt.position          = Prompt.Top
-    , Prompt.maxComplRows      = Just 5
-    , Prompt.searchPredicate   = L.isPrefixOf
-    }
+-- ------------------------------------------------------------------------
 
-myPromptInfix :: Prompt.XPConfig
-myPromptInfix = myPrompt { Prompt.searchPredicate = L.isInfixOf }
-
--- myLayoutPrompt :: X ()
--- myLayoutPrompt =
---     inputPromptWithCompl
---             myPrompt { Prompt.autoComplete = Just 1000 }
---             "Layout"
---             (Prompt.mkComplFunFromList'
---                 [ "1.Tall"
---                 , "2.HintedGrid"
---                 , "3.OneBig"
---                 , "4.Circle"
---                 , "5.Mosaic"
---                 , "6.ThreeCol"
---                 , "7.Spiral"
---                 ]
---             )
---         ?+ \l -> sendMessage $ JumpToLayout $ drop 2 l
-
--- mySessionPrompt :: X ()
--- mySessionPrompt =
---     inputPromptWithCompl
---             myPrompt { Prompt.autoComplete = Just 1000 }
---             "\x23FB " -- ⏻
---             (Prompt.mkComplFunFromList'
---                 ["1.Lock", "2.Suspend", "3.Reboot", "4.Shutdown", "5.Exit"]
---             )
---         ?+ \l -> prompt $ map toLower $ drop 2 l
---   where
---     prompt = \x -> case x of
---         "lock"     -> noConfirm x
---         "suspend"  -> noConfirm x
---         "reboot"   -> confirm x
---         "shutdown" -> confirm x
---         "exit"     -> confirmPrompt myPrompt x $ io (exitWith ExitSuccess)
---         _ -> noConfirm "lock"
---       where
---         confirm command = confirmPrompt myPrompt command
---             $ spawn ("$HOME/.scripts/i3lock.sh " ++ command)
---         noConfirm command = spawn ("$HOME/.scripts/i3lock.sh " ++ command)
-
-------------------------------------------------------------------------
--- Colors
-
-background :: String
-background = "#1D1F28"
-foreground :: String
-foreground = "#FDFDFD"
-lightBlack :: String
-lightBlack = "#282A36" -- color0
-lightRed :: String
-lightRed = "#F37F97" -- color1
-lightGreen :: String
-lightGreen = "#5ADECD" -- color2
-lightYellow :: String
-lightYellow = "#F2A272" -- color3
-lightBlue :: String
-lightBlue = "#8897F4" -- color4
-lightMagenta :: String
-lightMagenta = "#C574DD" -- color5
-lightCyan :: String
-lightCyan = "#79E6F3" -- color6
-lightWhite :: String
-lightWhite = "#FDFDFD" -- color7
-lightGray :: String
-lightGray = "#C0C0C0"
-darkBlack :: String
-darkBlack = "#414458" -- color8
-darkRed :: String
-darkRed = "#FF4971" -- color9
-darkGreen :: String
-darkGreen = "#18E3C8" -- color10
-darkYellow :: String
-darkYellow = "#FF8037" -- color11
-darkBlue :: String
-darkBlue = "#556FFF" -- color12
-darkMagenta :: String
-darkMagenta = "#B043D1" -- color13
-darkCyan :: String
-darkCyan = "#3FDCEE" -- color14
-darkWhite :: String
-darkWhite = "#BEBEC1" -- color15
-darkGray :: String
-darkGray = "#848482"
---
--- X11 color names:
--- https://www.wikiwand.com/en/X11_color_names
--- Color Setting
-
-colorBlue :: String
-colorBlue = "#868bae"
-
-colorGreen :: String
-colorGreen = "#00d700"
-
-colorRed :: String
-colorRed = "#ff005f"
-
-colorGray :: String
-colorGray = "#666666"
-
-colorWhite :: String
-colorWhite = "#bdbdbd"
-
-colorPromptbg :: String
-colorPromptbg = "#1c1c1c"
-
-colorPromptHLightfg :: String
-colorPromptHLightfg = foreground
-
-colorPromptHLightbg :: String
-colorPromptHLightbg = background
-
-colorNormalbg :: String
-colorNormalbg = background
-
-colorfg :: String
-colorfg = foreground
-
--- Border Styling
 myNormalBorderColor :: String
-myNormalBorderColor = colorNormalbg
-
+myNormalBorderColor = TH.background
 myFocusedBorderColor :: String
-myFocusedBorderColor = "#5ADECD"
-
--- name colors http://chir.ag/projects/name-that-color
-colorConiferGreen :: String
-colorConiferGreen = "#78ea59"
-
-colorGoldenFizzYellow :: String
-colorGoldenFizzYellow = "#ffff33"
-
-colorElectricViolet :: String
-colorElectricViolet = "#cc00ff"
-
-colorCeruleanBlue :: String
-colorCeruleanBlue = "#00a1f1"
-
-colorPomegranate :: String
-colorPomegranate = "#f65314"
-
-colorFrolyPink :: String
-colorFrolyPink = "#f7786b"
-
-colorSelectiveYellow :: String
-colorSelectiveYellow = "#fbbc05"
-
-colorCyan :: String
-colorCyan = "#00ffff"
-
-colorPictonBlue :: String
-colorPictonBlue = "#33bdf5"
-
+myFocusedBorderColor = TH.darkCyan
 -- border width
 myBorderWidth :: Dimension
 myBorderWidth = 3
 
-------------------------------------------------------------------------
--- Floats
---
-centerR = W.RationalRect (1 / 4) (1 / 4) (1 / 2) (1 / 2)
-
-bigCenterR = W.RationalRect (1 / 8) (1 / 8) (3 / 4) (3 / 4)
-
-leftR = W.RationalRect 0 (1 / 8) (1 / 2) (3 / 4)
-
-rightR = W.RationalRect (4 / 8) (1 / 8) (1 / 2) (3 / 4)
-
--- GridSelect configuration
-myGridSelectConfig :: GS.GSConfig Window
-myGridSelectConfig = def { GS.gs_navigate  = myNavigation
-                         , GS.gs_colorizer = GS.fromClassName
-                         }
-  where
-    myNavigation = GS.makeXEventhandler $ GS.shadowWithKeymap navKeymap $ const
-        GS.defaultNavigation
-    navKeymap = M.fromList
-        [ ((0, xK_Escape), GS.cancel)
-        , ((0, xK_Return), GS.select)
-        , ( (0, xK_slash)
-          , GS.substringSearch myNavigation
-          ) -- search
-        , ( (0, xK_h)
-          , GS.move (-1, 0) >> myNavigation
-          ) -- move left
-        , ( (0, xK_l)
-          , GS.move (1, 0) >> myNavigation
-          ) -- move right
-        , ( (0, xK_j)
-          , GS.move (0, 1) >> myNavigation
-          ) -- move down
-        , ( (0, xK_k)
-          , GS.move (0, -1) >> myNavigation
-          ) -- move up
-        , ( (0, xK_y)
-          , GS.move (-1, -1) >> myNavigation
-          ) -- move diagonal up left
-        , ( (0, xK_u)
-          , GS.move (1, -1) >> myNavigation
-          ) -- move diagonal up right
-        , ( (0, xK_b)
-          , GS.move (-1, 1) >> myNavigation
-          ) -- move diagonal down left
-        , ( (0, xK_n)
-          , GS.move (1, 1) >> myNavigation
-          ) -- move diagonal down right
-        , ((0, xK_Tab), GS.moveNext >> myNavigation) -- move next
-        ]
 
 
 -------------------------------------------------------------------------
 -- Keybinding hints
 --
-
--- rmHint :: [(a, b, c, d)] -> [(a, b)]
--- rmHint x = [ (t1, t2) | (t1, t2, _, _) <- x ]
-
--- Is this used ?
--- fmtDesc :: String -> [(String, a, Label, String)] -> Int -> String -> String -> String
--- fmtDesc name keyMap rows fg hl
---     | name == "" = "\"" ++ "\\n" ++ list ++ "\""
---     | otherwise  = "\"" ++ colStr hl ++ name ++ "\\n\\n" ++ list ++ "\""
---   where
---     list         = L.intercalate "\\n" (foldr (zipWithMore (++)) [""] col)
---     col          = chunksOf nRows $ colDesc keyMap
---     --sortKeys  = L.sortBy (\(a,_,_) (b,_,_) -> compare a b)
---     maxChars     = 220
---     lMap         = length keyMap
---     nRows        = min rows lMap
---     nCol         = max 1 $ ceiling $ fromIntegral lMap / fromIntegral nRows
---     charsPerCol  = quot maxChars nCol
---     charsPerICol = quot charsPerCol 2
-
---     descAlign    = charsPerICol
---     keyAlign     = charsPerICol
-
---     colDesc :: [(String, a, Label, String)] -> [String]
---     colDesc x =
---         [ colStr hl
---               ++ rAlign keyAlign key
---               ++ " "
---               ++ colStr fg
---               ++ lAlign descAlign desc
---         | (key, _, _, desc) <- x
---         ]
-
-    -- colStr :: String -> String
-    -- colStr col = "^fg(" ++ col ++ ")"
-
-    -- rAlign :: Int -> String -> String
-    -- rAlign = textAlign T.justifyRight
-
-    -- lAlign :: Int -> String -> String
-    -- lAlign = textAlign T.justifyLeft
-
-    -- textAlign :: (Int -> Char -> T.Text -> T.Text) -> Int -> (String -> String)
-    -- textAlign fAlign n = T.unpack . fAlign n ' ' . T.pack
-
-    zipWithMore :: (a -> a -> a) -> [a] -> [a] -> [a]
-    zipWithMore f (a : as) (b : bs) = f a b : zipWithMore f as bs
-    zipWithMore _ []       bs       = bs -- if there's more in bs, use that
-    zipWithMore _ as       []       = as -- if there's more in as, use that
-
-
 -------------------------
 fmtHint :: [(String, a, Label, String)] -> String -> String -> String -> Int -> String
 fmtHint keyMap colorBinding colorDesc colorTitle maxChars =
@@ -930,7 +538,7 @@ showHelp = spawn $ unwords
     [ "$HOME/.config/xmonad/scripts/showHintForKeymap.sh"
     , desc
     ]
-    where desc = fmtHint myKeymapH lightBlue lightGreen lightRed 220
+    where desc = fmtHint myKeymapH TH.brightBlue TH.brightGreen TH.brightRed 220
 
 -- Order displayed
 -- Label used for displaying keys
@@ -1075,7 +683,7 @@ myWorkspaceMovementKeys' =
     ]
 myScreenMovementKeys :: [(String, X (), Label, String)]
 myScreenMovementKeys =
-    [ ( "M-s"
+    [ ( "M-C-o"
       , sequence_ [CycleWS.nextScreen, warpToWindow (1 % 2) (1 % 2)]
       , ScreenLabel
       , "Next screen"
@@ -1134,11 +742,11 @@ myLayoutKeys' =
       , LayoutLabel
       , "Next layout"
       ) -- Rotate through the available layout algorithms
-    -- , ( "M-S-\\"
-    --   , sendMessage FirstLayout
-    --   , LayoutLabel
-    --   , "First layout"
-    --   )
+    , ( "M-S-\\"
+      , sendMessage FirstLayout
+      , LayoutLabel
+      , "First layout"
+      )
     , ("M-m", windows W.shiftMaster, ClientLabel, "Shift with master") -- Shift the focused window to the master window
     ]
 
@@ -1150,7 +758,9 @@ myLayoutTransformKeys =
     , ("M-S-,", sendMessage RTile.MirrorExpand, LayoutLabel, "Increase vertically")
     , ("M-g x", sendMessage $ Toggle REFLECTX , LayoutLabel, "Reflect horizontally")
     , ("M-g y", sendMessage $ Toggle REFLECTY , LayoutLabel, "Reflect vertically")
-    , ("M-g m", sendMessage $ Toggle MIRROR   , LayoutLabel, "Toggle mirror") -- Toggle Mirror layout
+    , ("M-g i", sendMessage $ Toggle MIRROR   , LayoutLabel, "Toggle mirror") -- Toggle Mirror layout
+    , ("M-S-<Tab>", rotSlavesDown, LayoutLabel, "Rotate slave windows")
+    , ("M-C-<Tab>", rotAllDown, LayoutLabel, "Rotate all windows")
     ]
 
 myWorkspaceKeys :: [(String, X (), Label, String)]
@@ -1185,7 +795,13 @@ myFloatKeys =
     , ("M-c c", withFocused $ windows . flip W.float centerR, ClientLabel, "Float center")
     , ("M-c l", withFocused $ windows . flip W.float leftR, ClientLabel, "Float left")
     , ("M-c r", withFocused $ windows . flip W.float rightR, ClientLabel, "Float right")
+    , ("M-c a", sinkAll , ClientLabel, "Sink all floating")
     ]
+    where
+      centerR = W.RationalRect (1 / 4) (1 / 4) (1 / 2) (1 / 2)
+      bigCenterR = W.RationalRect (1 / 8) (1 / 8) (3 / 4) (3 / 4)
+      leftR = W.RationalRect 0 (1 / 8) (1 / 2) (3 / 4)
+      rightR = W.RationalRect (4 / 8) (1 / 8) (1 / 2) (3 / 4)
 
 myLauncherKeys :: [(String, X (), Label, String)]
 myLauncherKeys = myLauncherKeys' ++ myScreenCaptureKeys
@@ -1202,41 +818,21 @@ myLauncherKeys' =
       , LauncherLabel
       , "File Manager"
       ) -- Launch FileManager
-    -- , ( "M-, b"
-    --   , spawn myBrowser
-    --   , Launcher
-    --   , "Browser"
-    --   ) -- Launch browser
-    -- , ( "M-, e"
-    --   , spawn myTextEditor
-    --   , Launcher
-    --   , "Text Editor"
-    --   ) -- Launch text editor
-    -- , ( "M-, f"
-    --   , spawn myFileManager
-    --   , Launcher
-    --   , "File Manager"
-    --   ) -- Launch File Manager
-    -- , ( "M-, k"
-    --   , spawn "xkill"
-    --   , Launcher
-    --   , "Kill Window"
-    --   ) -- Kill window
-    -- , ( "M-, r"
-    --   , spawn myConsoleFileManager
-    --   , Launcher
-    --   , "Ranger"
-    --   ) -- Launch text editor
-    -- , ( "M-, t"
-    --   , spawn myTmuxTerminal
-    --   , Launcher
-    --   , "Tmux"
-    --   ) -- Launch tmux terminal
-    -- , ( "M-, v"
-    --   , spawn "nvim"
-    --   , Launcher
-    --   , "Neovim"
-    --   ) -- Launch text editor
+    , ( "M-C-<Return>"
+      , spawn myConsoleFileManager
+      , LauncherLabel
+      , "Vifm"
+      )
+    , ( "M-, b"
+      , spawn myBrowser
+      , LauncherLabel
+      , "Browser"
+      ) -- Launch browser
+    , ( "M-, k"
+      , spawn "xkill"
+      , LauncherLabel
+      , "Kill Window"
+      ) -- Kill window
     , ( "M-S-C-="
       , spawn "$HOME/.scripts/xbacklight-toggle.sh"
       , LauncherLabel
@@ -1320,44 +916,33 @@ myMediaLabelKeys =
 
 myControlKeys :: [(String, X (), Label, String)]
 myControlKeys =
-    [ ( "M-S-q"
-      , kill
-      , ClientLabel
-      , "Kill focused"
-      ) -- Close the focused window
+    [ ( "M-S-q" , kill , ClientLabel , "Kill focused")
+    , ( "M-S-C-q" , killAll , ClientLabel , "Kill all in workspace")
        -- Toggle struts
     , ( "M-b"
       , sendMessage ManageDocks.ToggleStruts
       , MiscLabel
       , "Toggle statusbar"
       )
-       -- grid selection
-    , ( "M-g s"
-      , GS.goToSelected myGridSelectConfig
+      --  Search a window and focus into the window
+    , ( "M-g g"
+      , WPrompt.windowPrompt myPromptInfix WPrompt.Goto WPrompt.allWindows
       , MiscLabel
-      , "Grid selection"
+      , "Search and go to client"
       )
-       -- Search a window and focus into the window
-    -- , ( "M-g g"
-    --   , WPrompt.windowPrompt myPromptInfix WPrompt.Goto WPrompt.allWindows
-    --   , MiscLabel
-    --   , "Search and go to client"
-    --   )
-       -- Search a window and bring to the current workspace
-    -- , ( "M-g b"
-    --   , WPrompt.windowPrompt myPromptInfix WPrompt.Bring WPrompt.allWindows
-    --   , MiscLabel
-    --   , "Search and bring client"
-    --   )
-    -- , ( "M-g l"
-    --   , myLayoutPrompt
-    --   , MiscLabel
-    --   , "LayoutLabel menu"
-    --   )
+      --  Search a window and bring to the current workspace
+    , ( "M-g b"
+      , WPrompt.windowPrompt myPromptInfix WPrompt.Bring WPrompt.allWindows
+      , MiscLabel
+      , "Search and bring client"
+      )
+    , ( "M-g l"
+      , myLayoutPrompt
+      , MiscLabel
+      , "LayoutLabel menu"
+      )
        -- Resize viewed windows to the correct size
-  --, ("M-r", refresh)
-    --  Reset the layouts on the current workspace to default
-    --, ("M-S-<Space>", setLayoutLabel $ XMonad.layoutHook conf)
+    , ("M-r",  refresh, MiscLabel, "Reset window size to default")
     , ( "M-C-r" -- Restart xmonad
       , spawn
           "xmonad --recompile && xmonad --restart && notify-send 'Xmonad restarted' || notify-send 'Xmonad failed to restart'"
@@ -1369,17 +954,17 @@ myControlKeys =
       , MiscLabel
       , "Restart"
       ) -- restart xmonad w/o recompiling
-    -- , ( "M-S-<Space>"
-    --   , shellPrompt myPrompt
-    --   , MiscLabel
-    --   , "Shell launcher"
-    --   ) -- launch apps
+    , ( "M-S-<Space>"
+      , shellPrompt myPrompt
+      , MiscLabel
+      , "Shell launcher"
+      ) -- launch apps
     , ( "M-<Space>"
       , spawn myLauncher
       , MiscLabel
       , "Launcher"
       ) -- launch apps
-    -- , ("M-<Esc>", mySessionPrompt   ,  MiscLabel, "Log menu")
+    , ("M-<Esc>", mySessionPrompt   ,  MiscLabel, "Log menu")
     , ( "M-u"
       , UH.focusUrgent
       , ClientLabel

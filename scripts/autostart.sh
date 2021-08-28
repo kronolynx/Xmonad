@@ -8,7 +8,7 @@
 # }
 
 run() {
-  [ -z "$(pidof -x $1)" ] && $@ &
+  [ -z "$(pidof -x $1)" ] && $@&
 }
 
 # (sleep 2; run $HOME/.config/polybar/launch.sh) &
@@ -65,4 +65,4 @@ fi
 
 # run xautolock -time 7 -locker lock
 run xset s 500 &
-xautolock -time 5 -locker lock -notify 30 -notifier "notify-send 'Locker' 'Locking screen in 30 seconds'" -killtime 5 -killer "systemctl suspend" &
+xautolock -time 7 -locker lock -notify 30 -notifier "notify-send 'Locker' 'Locking screen in 30 seconds'" -killtime 7 -killer "systemctl suspend" &
