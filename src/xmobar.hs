@@ -88,7 +88,7 @@ config =
   cpuAction, memoryAction, dateAction, volAction :: ShowS
   cpuAction x = xmobarAction "pgrep -x htop || alacritty -e htop -s PERCENT_CPU" "1" x
   memoryAction x = xmobarAction "pgrep -x htop || alacritty -e htop -s PERCENT_MEM" "1" x
-  dateAction x = xmobarAction "~/.config/xmonad/scripts/date.sh" "1" x
+  dateAction x = xmobarAction "~/.config/xmonad/scripts/calendar.sh" "1" x
   volAction x =
     xmobarAction "pamixer -t" "1" $
       xmobarAction "alacritty -e pulsemixer" "3" $

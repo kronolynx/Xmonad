@@ -17,7 +17,7 @@ import           XMonad.Hooks.FloatNext               ( floatNextHook )
 import qualified XMonad.Hooks.ManageDocks            as ManageDocks
 import qualified XMonad.Hooks.ManageHelpers          as ManageHelpers
 import qualified XMonad.Hooks.UrgencyHook            as UH
-import XMonad.Hooks.InsertPosition                   ( insertPosition, Focus(Newer),
+import           XMonad.Hooks.InsertPosition         ( insertPosition, Focus(Newer),
                                                       Position(End) )
 
 import           XMonad.Hooks.StatusBar              (StatusBarConfig,
@@ -27,6 +27,7 @@ import           XMonad.Hooks.StatusBar.PP           (PP (..),
                                                       xmobarAction,
                                                       xmobarBorder, xmobarColor,
                                                       xmobarStrip)
+import           XMonad.Hooks.SetWMName               (setWMName)
 
 -- layouts
 import           XMonad.Layout.Circle                ( Circle(..) )
@@ -36,7 +37,7 @@ import           XMonad.Layout.Mosaic                ( mosaic )
 import           XMonad.Layout.MultiToggle           ( Toggle(..) , mkToggle1 )
 import           XMonad.Layout.MultiToggle.Instances ( StdTransformers ( MIRROR , NBFULL))
 
-import           XMonad.Layout.NoBorders             ( noBorders, smartBorders )
+import           XMonad.Layout.NoBorders             ( noBorders, smartBorders, hasBorder )
 import           XMonad.Layout.OneBig                ( OneBig(OneBig) )
 import           XMonad.Layout.Reflect               ( REFLECTX(..) , REFLECTY(..))
 import           XMonad.Layout.Renamed               ( Rename(Replace) , renamed)
@@ -373,6 +374,7 @@ myManageHook' =
           , [ title =? t --> ManageHelpers.doCenterFloat | t <- myTitleCenterFloats ]
           , [ className =? c --> doShift (myWorkspaces !! ws) | (c, ws) <- myShifts ]
           , [ title =? c --> doShift (myWorkspaces !! ws) | (c, ws) <- myTitleShifts ]
+          , [ className =? c --> hasBorder False  | c <- myClassNoBorder]
           , [(className =? "firefox" <&&> resource =? "Dialog") --> doFloat ] -- Float Firefox Dialog
           , [ManageHelpers.isFullscreen -->  ManageHelpers.doFullFloat]
           , [ManageHelpers.isDialog --> ManageHelpers.doFloat]
@@ -380,11 +382,11 @@ myManageHook' =
   where
     myCenterFloats = ["zenity", "Arandr", "Galculator", "albert"]
     myTitleCenterFloats =
-        [ "File Operation Progress"
-        , "Downloads"
-        , "Save as..."
-        , "Ulauncher Preferences"
-        ]
+      [ "File Operation Progress"
+      , "Downloads"
+      , "Save as..."
+      , "Ulauncher Preferences"
+      ]
     myClassFloats =
       [ "confirm"
       , "file_progress"
@@ -401,26 +403,31 @@ myManageHook' =
     myFullFloats  = []
       -- workspace numbers start at 0
     myShifts =
-        [ ("telegram-desktop"  , 10)
-        , ("TelegramDesktop"   , 10)
-        , ("Slack"             , 9)
-        , ("Postman"           , 6)
-        , ("DevCenter"         , 6)
-        , ("jetbrains-idea-ce" , 2)
-        , ("firefox"           , 0)
-        , ("Chromium"          , 13)
-        , ("Joplin"            , 6)
-        , ("Transmission-gtk"  , 11)
-        ]
+      [ ("telegram-desktop"  , 10)
+      , ("TelegramDesktop"   , 10)
+      , ("Slack"             , 9)
+      , ("Postman"           , 6)
+      , ("DevCenter"         , 6)
+      , ("jetbrains-idea-ce" , 2)
+      , ("firefox"           , 0)
+      , ("Chromium"          , 13)
+      , ("Joplin"            , 6)
+      , ("Transmission-gtk"  , 11)
+      ]
     myTitleShifts =
-        [ ("DevCenter"         , 6)
-        ]
+      [ ("DevCenter"         , 6)
+      ]
+    myClassNoBorder =
+      [
+        "Yad"
+      ]
 
 
 
 myStartupHook :: X ()
 myStartupHook = do
     checkKeymap myConfig myKeymap
+    setWMName "LG3D" -- Fix some java problems
     -- Cursor.setDefaultCursor Cursor.xC_left_ptr
     spawn "$HOME/.config/xmonad/scripts/autostart.sh"
     spawnOnce
