@@ -40,15 +40,10 @@ config =
     , additionalFonts =
         [
           "xft:Font Awesome 5 Free Solid:size=10"
-        , "xft:Hack Nerd Font:size=14"
         , "xft:Font Awesome 5 Brands:size=11"
-        , "xft:Hack Nerd Font:size=14"
-        , "xft:Hack Nerd Font:size=11"
-
-        --   "xft:FonAwesome 5 Free Solid:size=10"
-        -- , "xft:Font Awesome 5 Brands:size=11"
-        -- , "xft:JetBrainsMono Nerd Font:size=14"
-        -- , "xft:JetBrainsMono Nerd Font:size=11"
+        , "xft:file\\-icons:size=11"
+        , "xft:JetBrainsMono Nerd Font:size=14"
+        , "xft:JetBrainsMono Nerd Font:size=10"
         ]
     , textOffset = 20
     , textOffsets = [20, 21, 20, 21, 20]
@@ -73,10 +68,9 @@ config =
           <> "} {" -- wrap "}" "{"  (inWrapper' (white "\xfb8a"))
           <> concatMap
             inWrapper
-            [ redWrap "%wttr%"
+            [ xmobarFont 5 "%wttr%"
             , cpuAction "%cpu%"
             , memoryAction "%memory%"
-            -- , volAction (whiteWrap "%volwire%")
             , dateAction "%date%"
             , "%tray%"
             ]
@@ -90,12 +84,6 @@ config =
     wrap
       (xmobarColor TH.darkBlack  "" (xmobarFont 5 "\xe0b6"))
       (xmobarColor TH.darkBlack  "" (xmobarFont 5 "\xe0b4") <> " ")
-
-  -- inWrapper' :: String -> String
-  -- inWrapper' =
-  --   wrap
-  --     (xmobarColor TH.darkBlack "" (xmobarFont 3 "\xe0b6"))
-  --     (xmobarColor TH.darkBlack "" (xmobarFont 3 "\xe0b4"))
 
   cpuAction, memoryAction, dateAction, volAction :: ShowS
   cpuAction x = xmobarAction "pgrep -x htop || alacritty -e htop -s PERCENT_CPU" "1" x
@@ -112,7 +100,7 @@ data HasIcon = HasIcon deriving (Read, Show)
 
 instance Exec HasIcon where
   alias _ = "hasIcon"
-  run _ = return $ xmobarAction "xdotool key super+p" "1" $ brightMagentaWrap $ xmobarFont 2 "\xe61f"
+  run _ = return $ xmobarAction "xdotool key super+p" "1" $ brightMagentaWrap $ xmobarFont 4 "\xe61f"
 
 -- | Commands to run xmobar modules on start
 myCommands :: [Runnable]
@@ -151,8 +139,6 @@ myCommands =
     ]
     (3 `seconds`)
   , Run $ Date (blueWrap $ xmobarFont 1 "\xf017" <> " %l:%M %p") "date" (30 `seconds`)
-  -- , Run $ CommandReader ("exec " <> homeDir <> "/.config/xmonad/scripts/volume.sh") "volwire"
-  -- , Run $ CommandReader ("exec " <> homeDir <> "/.config/xmonad/scripts/playerctl.sh") "playerctl"
   , Run $ CommandReader ("exec " <> homeDir <> "/.config/xmonad/scripts/weather.sh bar") "wttr"
   , Run $ Com (homeDir <> "/.config/xmonad/scripts/tray-padding-icon.sh") ["stalonetray"] "tray" 5
   ]

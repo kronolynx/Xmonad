@@ -104,7 +104,8 @@ pictonBlue        :: String
 pictonBlue        = "#33bdf5"
 
 myFont :: String
-myFont = "xft:Hack Nerd Font:weight=bold:pixelsize=14:antialias=true:hinting=true"
+myFont = "xft:JetBrainsMono Nerd Font:weight=bold:pixelsize=14:antialias=true:hinting=true"
+-- myFont = "xft:Hack:weight=bold:pixelsize=14:antialias=true:hinting=true"
 -- myFontGTK :: String
 -- myFontGTK = ""
 -- myBigFont :: String

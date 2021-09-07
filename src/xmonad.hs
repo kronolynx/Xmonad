@@ -26,7 +26,7 @@ import           XMonad.Hooks.StatusBar.PP           (PP (..),
                                                       shorten', wrap,
                                                       xmobarAction,
                                                       xmobarBorder, xmobarColor,
-                                                      xmobarFont, xmobarStrip)
+                                                      xmobarStrip)
 
 -- layouts
 import           XMonad.Layout.Circle                ( Circle(..) )
@@ -222,11 +222,13 @@ mySB = statusBarProp "xmobar" (pure myXmobarPP)
   myXmobarPP = def
     { ppSep             = wrapSep " "
     , ppTitleSanitize   = xmobarStrip
-    , ppCurrent         = xmobarFont 5 . green  . xmobarBorder "Bottom" TH.darkGreen  2 . currentWorkspace
-    , ppVisible         = xmobarFont 5 . lowWhite .xmobarBorder "Bottom" TH.darkGray 2 . occupiedWorkspace
-    , ppHidden          = xmobarFont 5 . blue . occupiedWorkspace
-    , ppHiddenNoWindows = xmobarFont 5 . gray . emptyWorkspace
-    , ppUrgent          = xmobarFont 5 . red . urgentWorkspace
+    -- , ppCurrent         = green  . xmobarBorder "Bottom" TH.darkGreen  2 . currentWorkspace
+    -- , ppVisible         = lowWhite .xmobarBorder "Bottom" TH.darkGray 2 . occupiedWorkspace
+    , ppCurrent         = green . currentWorkspace
+    , ppVisible         = lowWhite . occupiedWorkspace
+    , ppHidden          = blue . occupiedWorkspace
+    , ppHiddenNoWindows = gray . emptyWorkspace
+    , ppUrgent          = red . urgentWorkspace
     , ppWsSep           = xmobarColor "" background "  "
     , ppTitle           = brightBlue. xmobarAction "xdotool key Super+shift+c" "2" . shorten 40
     , ppSort            =  getSortByIndex
@@ -234,15 +236,15 @@ mySB = statusBarProp "xmobar" (pure myXmobarPP)
     , ppExtras          = [xmobarColorL TH.darkWhite background windowCount]
     , ppLayout          = blue . xmobarAction "xdotool key Super+/" "1" . xmobarAction
                             "xdotool key Super+shift+/"
-                            "3" . xmobarFont 5 . myPPLayout
+                            "3" . myPPLayout
     }
    where
     shorten :: Int -> String -> String
     shorten = shorten' "…"
 
     wrapSep :: String -> String
-    wrapSep = wrap (xmobarColor TH.darkBlack "" (xmobarFont 5 "\xe0b4"))
-                   (xmobarColor TH.darkBlack "" (xmobarFont 5 "\xe0b6"))
+    wrapSep = wrap (xmobarColor TH.darkBlack ""  "\xe0b4")
+                   (xmobarColor TH.darkBlack ""  "\xe0b6")
 
     currentWorkspace :: String -> String
     currentWorkspace _ = "\61713" -- " "
