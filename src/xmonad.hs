@@ -832,12 +832,12 @@ myLauncherKeys' =
       , LauncherLabel
       , "Vifm"
       )
-    , ( "M-, b"
+    , ( "M-; b"
       , spawn myBrowser
       , LauncherLabel
       , "Browser"
       ) -- Launch browser
-    , ( "M-, k"
+    , ( "M-; k"
       , spawn "xkill"
       , LauncherLabel
       , "Kill Window"
