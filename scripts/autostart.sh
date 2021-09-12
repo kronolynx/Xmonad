@@ -65,4 +65,4 @@ fi
 
 # run xautolock -time 7 -locker lock
 run xset s 500 &
-xautolock -time 7 -locker lock -notify 30 -notifier "notify-send 'Locker' 'Locking screen in 30 seconds'" -killtime 7 -killer "systemctl suspend" &
+xautolock -time 10 -locker lock -notify 30 -notifier "notify-send 'Locker' 'Locking screen in 30 seconds'" -killtime 7 -killer "systemctl suspend" &

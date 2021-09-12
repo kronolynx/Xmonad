@@ -27,7 +27,6 @@ import           XMonad.Hooks.StatusBar.PP           (PP (..),
                                                       xmobarAction,
                                                       xmobarBorder, xmobarColor,
                                                       xmobarStrip)
-import           XMonad.Hooks.SetWMName               (setWMName)
 
 -- layouts
 import           XMonad.Layout.Circle                ( Circle(..) )
@@ -131,7 +130,13 @@ myTmuxTerminal = myTerminal ++ " -e tmux attach"
 
 -- Launcher
 myLauncher :: String
-myLauncher = "rofi -show drun -modi run,drun,window"
+myLauncher = "rofi -show drun -modi run,drun,window -show-icons"
+
+myWindowSelector :: String
+myWindowSelector = "rofi -show window -show-icons"
+
+myClipboard :: String
+myClipboard = "rofi -modi 'clipboard:greenclip print' -show clipboard -run-command '{cmd}'"
 
 -- Editor
 myTextEditor :: String
@@ -427,7 +432,6 @@ myManageHook' =
 myStartupHook :: X ()
 myStartupHook = do
     checkKeymap myConfig myKeymap
-    setWMName "LG3D" -- Fix some java problems
     -- Cursor.setDefaultCursor Cursor.xC_left_ptr
     spawn "$HOME/.config/xmonad/scripts/autostart.sh"
     spawnOnce
@@ -963,7 +967,7 @@ myControlKeys =
       , MiscLabel
       , "Restart"
       ) -- restart xmonad w/o recompiling
-    , ( "M-S-<Space>"
+    , ( "M-C-S-<Space>"
       , shellPrompt myPrompt
       , MiscLabel
       , "Shell launcher"
@@ -973,6 +977,16 @@ myControlKeys =
       , MiscLabel
       , "Launcher"
       ) -- launch apps
+    , ( "M-C-<Space>"
+      , spawn myClipboard
+      , MiscLabel
+      , "Clipboard"
+      )
+    , ( "M-S-<Space>"
+      , spawn myWindowSelector
+      , MiscLabel
+      , "window selector"
+      )
     , ("M-<Esc>", mySessionPrompt   ,  MiscLabel, "Log menu")
     , ( "M-u"
       , UH.focusUrgent
