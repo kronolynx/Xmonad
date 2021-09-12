@@ -24,9 +24,7 @@ import           XMonad.Hooks.StatusBar              (StatusBarConfig,
                                                       statusBarProp, withSB)
 import           XMonad.Hooks.StatusBar.PP           (PP (..),
                                                       shorten', wrap,
-                                                      xmobarAction,
-                                                      xmobarBorder, xmobarColor,
-                                                      xmobarStrip)
+                                                      xmobarColor, xmobarStrip, xmobarAction, filterOutWsPP)
 
 -- layouts
 import           XMonad.Layout.Circle                ( Circle(..) )
@@ -74,6 +72,15 @@ import           XMonad.Actions.WithAll              (sinkAll, killAll)
 
 import qualified XMonad.StackSet                     as W
 
+import           XMonad.Util.SpawnOnce               (spawnOnce)
+import           XMonad.Util.Loggers                 (xmobarColorL)
+import           XMonad.Util.NamedScratchpad
+                                                     (customFloating,
+                                                      namedScratchpadAction,
+                                                      namedScratchpadManageHook,
+                                                      NamedScratchpad(NS),
+                                                      scratchpadWorkspaceTag)
+
 import           Control.Monad                       ( liftM2 )
 import qualified Data.List                           as L
 import           Data.List.Split                     ( chunksOf )
@@ -81,8 +88,6 @@ import qualified Data.Map                            as M
 import qualified Data.Text                           as T
 import           Data.Char                           ( toLower )
 import           Data.Ratio                          ( (%) )
-import           XMonad.Util.SpawnOnce               (spawnOnce)
-import           XMonad.Util.Loggers                 (xmobarColorL)
 import           Data.Semigroup (All)
 import qualified XMonad.Config.Prime                 as ManageHelpers
 
@@ -124,9 +129,6 @@ myScreenCapture = "$HOME/.scripts/screen_shot.sh"
 
 myTerminal :: String
 myTerminal = "alacritty"
-
-myTmuxTerminal :: String
-myTmuxTerminal = myTerminal ++ " -e tmux attach"
 
 -- Launcher
 myLauncher :: String
@@ -222,7 +224,8 @@ myLayout =
 
 
 mySB :: StatusBarConfig
-mySB = statusBarProp "xmobar" (pure myXmobarPP)
+mySB = statusBarProp "xmobar"
+     $ pure $ filterOutWsPP [scratchpadWorkspaceTag] myXmobarPP
  where
   myXmobarPP :: PP
   myXmobarPP = def
@@ -236,7 +239,7 @@ mySB = statusBarProp "xmobar" (pure myXmobarPP)
     , ppHiddenNoWindows = gray . emptyWorkspace
     , ppUrgent          = red . urgentWorkspace
     , ppWsSep           = xmobarColor "" background "  "
-    , ppTitle           = brightBlue. xmobarAction "xdotool key Super+shift+c" "2" . shorten 40
+    , ppTitle           = brightBlue. xmobarAction "xdotool key Super+shift+c" "4" . shorten 40
     , ppSort            =  getSortByIndex
     , ppOrder           = \[ws, l, t, ex] -> [ws, l, ex, t]
     , ppExtras          = [xmobarColorL TH.darkWhite background windowCount]
@@ -383,6 +386,7 @@ myManageHook' =
           , [(className =? "firefox" <&&> resource =? "Dialog") --> doFloat ] -- Float Firefox Dialog
           , [ManageHelpers.isFullscreen -->  ManageHelpers.doFullFloat]
           , [ManageHelpers.isDialog --> ManageHelpers.doFloat]
+          , [namedScratchpadManageHook myScratchPads]
           ]
   where
     myCenterFloats = ["zenity", "Arandr", "Galculator", "albert"]
@@ -427,6 +431,17 @@ myManageHook' =
         "Yad"
       ]
 
+myScratchPads :: [NamedScratchpad]
+myScratchPads = [ NS "terminal" spawnTerm findTerm manageTerm ]
+  where
+    spawnTerm  = myTerminal ++ " -t scratchpad"
+    findTerm   = title =? "scratchpad"
+    manageTerm = customFloating $ W.RationalRect l t w h
+               where
+                 h = 0.9
+                 w = 0.9
+                 t = 0.95 -h
+                 l = 0.95 -w
 
 
 myStartupHook :: X ()
@@ -998,5 +1013,6 @@ myControlKeys =
       , ClientLabel
       , "Clear urgent"
       ) -- clear urgents
+    , ("M-t", namedScratchpadAction myScratchPads "terminal", MiscLabel, "Scratchpad")
     , ("M-<F1>", unGrab >> showHelp, MiscLabel, "Show help")
     ]
