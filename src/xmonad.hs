@@ -130,7 +130,7 @@ myConfig = def { borderWidth        = myBorderWidth
 --
 -- Capture Screen
 myScreenCapture :: String
-myScreenCapture = "$HOME/.scripts/screen_shot.sh"
+myScreenCapture = "xfce4-screenshooter"
 
 myTerminal :: String
 myTerminal = "alacritty"
@@ -412,6 +412,7 @@ myManageHook' =
       , "pinentry-gtk-2"
       , "splash"
       , "toolbar"
+      , "Peek"
       ]
     myTitleFloats = ["Media viewer", "Yad"]
     myFullFloats  = []
@@ -605,8 +606,13 @@ myFocusFollowsMouse = True
 myMouseBindings :: XConfig l -> M.Map (KeyMask, Button) (Window -> X ())
 myMouseBindings XConfig { XMonad.modMask = modMask } = M.fromList
     -- mod-button1, Set the window to floating mode and move by dragging
-    [ ((modMask, button1), \w -> focus w >> mouseMoveWindow w
-                                       >> windows W.shiftMaster)
+    [ ((modMask, button1), \w -> do
+      floats <- gets $ W.floating . windowset
+      if (w `M.member` floats) then
+        focus w >> mouseMoveWindow w >> windows W.shiftMaster
+      else
+        focus w >> windows W.shiftMaster
+        )
 
     -- mod-button2, Raise the window to the top of the stack
     , ((modMask, button2), \w -> focus w >> windows W.shiftMaster)
@@ -876,22 +882,17 @@ myLauncherKeys' =
 myScreenCaptureKeys :: [(String, X (), Label, String)]
 myScreenCaptureKeys =
     [ ( "<Print>"
-      , spawn $ myScreenCapture ++ " root && notify-send 'Desktop captured'"
+      , spawn $ myScreenCapture ++ " --fullscreen"
       , MiscLabel
       , "Take a screenshot (desktop)"
       )
     , ( "S-<Print>"
-      , spawn
-          $  "notify-send 'Select Area';sleep 0.2;"
-          ++ myScreenCapture
-          ++ " area && notify-send 'Area captured'"
+      , spawn $ myScreenCapture ++ " --region"
       , MiscLabel
       , "Take a screenshot (area)"
       )
     , ( "C-<Print>" --
-      , spawn
-          $  myScreenCapture
-          ++ " window && notify-send 'Focused window captured'"
+      , spawn $ myScreenCapture ++ " --window --no-border"
       , MiscLabel
       , "Take a screenshot (window)"
       )
