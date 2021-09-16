@@ -82,7 +82,10 @@ myBar() {
         while :; do
                 refresh
                 if [ -z "$weather" ]; then
-                        printf 'Offline\n'
+                        printf '?\n'
+                        sleep 5m
+                elif [[ "$weather" =~ "Unknown" ]]; then
+                        printf '?\n'
                         sleep 5m
                 else
                         printf '<fc=%s,%s>%s</fc><fc=%s,%s> %s</fc>\n' \
@@ -91,7 +94,6 @@ myBar() {
                 fi
         done
 }
-
 case $1 in
         bar) myBar ;;
         *)

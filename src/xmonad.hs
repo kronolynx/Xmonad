@@ -16,6 +16,7 @@ import           XMonad.Hooks.EwmhDesktops            ( ewmh, ewmhFullscreen )
 import           XMonad.Hooks.FloatNext               ( floatNextHook )
 import qualified XMonad.Hooks.ManageDocks            as ManageDocks
 import qualified XMonad.Hooks.ManageHelpers          as ManageHelpers
+import           XMonad.Hooks.RefocusLast            (refocusLastLogHook)
 import qualified XMonad.Hooks.UrgencyHook            as UH
 import           XMonad.Hooks.InsertPosition         ( insertPosition, Focus(Newer),
                                                       Position(End) )
@@ -79,7 +80,9 @@ import           XMonad.Util.NamedScratchpad
                                                       namedScratchpadAction,
                                                       namedScratchpadManageHook,
                                                       NamedScratchpad(NS),
-                                                      scratchpadWorkspaceTag)
+                                                      scratchpadWorkspaceTag,
+                                                      nsHideOnFocusLoss
+                                                      )
 
 import           Control.Monad                       ( liftM2 )
 import qualified Data.List                           as L
@@ -117,6 +120,8 @@ myConfig = def { borderWidth        = myBorderWidth
                , layoutHook         = myLayout
                , startupHook        = myStartupHook
                , handleEventHook    = myHandleEventHook
+               , logHook = refocusLastLogHook
+                        >> nsHideOnFocusLoss myScratchPads
                }
 
 
@@ -132,7 +137,7 @@ myTerminal = "alacritty"
 
 -- Launcher
 myLauncher :: String
-myLauncher = "rofi -show drun -modi run,drun,window -show-icons"
+myLauncher = "rofi -show drun -modi run,drun -show-icons"
 
 myWindowSelector :: String
 myWindowSelector = "rofi -show window -show-icons"
