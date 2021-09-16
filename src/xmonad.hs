@@ -572,7 +572,7 @@ showHelp = spawn $ unwords
     [ "$HOME/.config/xmonad/scripts/showHintForKeymap.sh"
     , desc
     ]
-    where desc = fmtHint myKeymapH TH.brightBlue TH.brightGreen TH.brightRed 220
+    where desc = fmtHint myKeymapH TH.brightBlue TH.brightGreen TH.brightRed 180
 
 -- Order displayed
 -- Label used for displaying keys
@@ -829,12 +829,12 @@ myWorkspaceKeys =
 
 myFloatKeys :: [(String, X (), Label, String)]
 myFloatKeys =
-    [ ("M-c s", withFocused $ windows . W.sink, ClientLabel, "Sink floating")
-    , ("M-c b", withFocused $ windows . flip W.float bigCenterR, ClientLabel, "Float big center")
-    , ("M-c c", withFocused $ windows . flip W.float centerR, ClientLabel, "Float center")
-    , ("M-c l", withFocused $ windows . flip W.float leftR, ClientLabel, "Float left")
-    , ("M-c r", withFocused $ windows . flip W.float rightR, ClientLabel, "Float right")
-    , ("M-c a", sinkAll , ClientLabel, "Sink all floating")
+    [ ("M-a s", withFocused $ windows . W.sink, ClientLabel, "Sink floating")
+    , ("M-a b", withFocused $ windows . flip W.float bigCenterR, ClientLabel, "Float big center")
+    , ("M-a c", withFocused $ windows . flip W.float centerR, ClientLabel, "Float center")
+    , ("M-a l", withFocused $ windows . flip W.float leftR, ClientLabel, "Float left")
+    , ("M-a r", withFocused $ windows . flip W.float rightR, ClientLabel, "Float right")
+    , ("M-a a", sinkAll , ClientLabel, "Sink all floating")
     ]
     where
       centerR = W.RationalRect (1 / 4) (1 / 4) (1 / 2) (1 / 2)

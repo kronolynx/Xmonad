@@ -34,10 +34,13 @@ screen_size=$(xdpyinfo | awk '/dimensions:/ { print $2; exit }')
 screen_width=$(echo "${screen_size}" | cut -f1 -dx)
 screen_height=$(echo "${screen_size}" | cut -f2 -dx)
 
-y_pos=$((screen_height - bar_height * (n_lines + 1) - bar_height))
+x_pos=35
+width=$((screen_width - (x_pos * 2)))
+
+y_pos=$((screen_height - bar_height * (n_lines + 6) - bar_height))
 
 # DEBUG
-#echo -e "${keymap_text}" > ~/tmp/keymap
+# echo -e "${keymap_text}" > ~/tmp/keymap
 
 if [ "${delay}" -gt 0 ]; then
     sleep "${delay}"
@@ -45,4 +48,4 @@ if [ "${delay}" -gt 0 ]; then
     lsof -ad0 -Ep "$$" | grep "xmonad"
 fi
 
-(echo -e "${keymap_text}"; cat) | dzen2 "${pers_flag[@]}" -bg "${bg_color}" -fn "${dzen_font}" -h "${bar_height}" -l "${n_lines}" -y "${y_pos}" -w "${screen_width}" -e "${event_flag}"
+(echo -e "${keymap_text}"; cat) | dzen2 "${pers_flag[@]}" -bg "${bg_color}" -fn "${dzen_font}" -h "${bar_height}" -l "${n_lines}" -x "${x_pos}" -y "${y_pos}" -w "${width}" -e "${event_flag}"
