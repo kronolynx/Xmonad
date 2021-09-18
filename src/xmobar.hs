@@ -32,7 +32,6 @@ config =
           [
             TH.myFont
           , "Noto Sans:size=10:style=Bold"
-          , "Noto Color Emoji:size=10:style=Regular"
           , "Noto Sans CJK SC:size=10:style=Bold"
           , "Noto Sans CJK JP:size=10:style=Bold"
           , "Noto Sans CJK KR:size=10:style=Bold"
@@ -63,7 +62,7 @@ config =
     , sepChar = "%"
     , alignSep = "}{"
     , template =
-        wrap " " " " "%hasIcon%"
+        wrap " " " " (brightMagentaWrap $ xmobarFont 4 "\xe61f")
           <> inWrapper "%UnsafeXMonadLog%"
           <> "} {" -- wrap "}" "{"  (inWrapper' (white "\xfb8a"))
           <> concatMap
@@ -95,19 +94,11 @@ config =
         xmobarAction "[ $(pamixer --get-volume) -lt 200 ] && pamixer --allow-boost -u -i 5" "4" $
           xmobarAction "pamixer --allow-boost -u -d 5" "5" x
 
--- Custom module
-data HasIcon = HasIcon deriving (Read, Show)
-
-instance Exec HasIcon where
-  alias _ = "hasIcon"
-  run _ = return $ xmobarAction "xdotool key super+p" "1" $ brightMagentaWrap $ xmobarFont 4 "\xe61f"
-
 -- | Commands to run xmobar modules on start
 myCommands :: [Runnable]
 myCommands =
   [
     Run UnsafeXMonadLog
-  , Run HasIcon
   , Run $ Cpu
     [ "-t"
     , cyanWrap (xmobarFont 1 "\xf108" <> " <total>%")
@@ -116,7 +107,7 @@ myCommands =
     , "-H"
     , "85"
     , "--low"
-    , TH.darkYellow <> "," <> backgroundWrap
+    , TH.brightBlue <> "," <> backgroundWrap
     , "--normal"
     , TH.darkGreen <> "," <> backgroundWrap
     , "--high"
@@ -131,7 +122,7 @@ myCommands =
     , "-H"
     , "85"
     , "--low"
-    , TH.darkYellow <> "," <> backgroundWrap
+    , TH.brightBlue <> "," <> backgroundWrap
     , "--normal"
     , TH.darkGreen <> "," <> backgroundWrap
     , "--high"
