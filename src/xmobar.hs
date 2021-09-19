@@ -13,7 +13,6 @@ import Xmobar
       Date(Date),
       Monitors(Memory, Cpu),
       XMonadLog(UnsafeXMonadLog),
-      Exec(alias, run),
       Runnable(..),
       XPosition(Static, xpos, ypos, width, height),
       Border(FullB),
@@ -84,15 +83,10 @@ config =
       (xmobarColor TH.darkBlack  "" (xmobarFont 5 "\xe0b6"))
       (xmobarColor TH.darkBlack  "" (xmobarFont 5 "\xe0b4") <> " ")
 
-  cpuAction, memoryAction, dateAction, volAction :: ShowS
+  cpuAction, memoryAction, dateAction :: ShowS
   cpuAction x = xmobarAction "pgrep -x htop || alacritty -e htop -s PERCENT_CPU" "1" x
   memoryAction x = xmobarAction "pgrep -x htop || alacritty -e htop -s PERCENT_MEM" "1" x
   dateAction x = xmobarAction "~/.config/xmonad/scripts/calendar.sh" "1" x
-  volAction x =
-    xmobarAction "pamixer -t" "1" $
-      xmobarAction "alacritty -e pulsemixer" "3" $
-        xmobarAction "[ $(pamixer --get-volume) -lt 200 ] && pamixer --allow-boost -u -i 5" "4" $
-          xmobarAction "pamixer --allow-boost -u -d 5" "5" x
 
 -- | Commands to run xmobar modules on start
 myCommands :: [Runnable]

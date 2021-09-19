@@ -16,7 +16,6 @@ import           XMonad.Hooks.EwmhDesktops            ( ewmh, ewmhFullscreen )
 import           XMonad.Hooks.FloatNext               ( floatNextHook )
 import qualified XMonad.Hooks.ManageDocks            as ManageDocks
 import qualified XMonad.Hooks.ManageHelpers          as ManageHelpers
-import           XMonad.Hooks.RefocusLast            (refocusLastLogHook)
 import qualified XMonad.Hooks.UrgencyHook            as UH
 import           XMonad.Hooks.InsertPosition         ( insertPosition, Focus(Newer),
                                                       Position(End) )
@@ -80,8 +79,7 @@ import           XMonad.Util.NamedScratchpad
                                                       namedScratchpadAction,
                                                       namedScratchpadManageHook,
                                                       NamedScratchpad(NS),
-                                                      scratchpadWorkspaceTag,
-                                                      nsHideOnFocusLoss
+                                                      scratchpadWorkspaceTag
                                                       )
 
 import           Control.Monad                       ( liftM2 )
@@ -120,8 +118,8 @@ myConfig = def { borderWidth        = myBorderWidth
                , layoutHook         = myLayout
                , startupHook        = myStartupHook
                , handleEventHook    = myHandleEventHook
-               , logHook = refocusLastLogHook
-                        >> nsHideOnFocusLoss myScratchPads
+              --  , logHook = refocusLastLogHook
+              --           >> nsHideOnFocusLoss myScratchPads
                }
 
 
@@ -494,86 +492,7 @@ myBorderWidth = 3
 
 -------------------------------------------------------------------------
 -- Keybinding hints
---
 -------------------------
-fmtHint :: [(String, a, Label, String)] -> String -> String -> String -> Int -> String
-fmtHint keyMap colorBinding colorDesc colorTitle maxChars =
-   "\"\\n" ++ L.intercalate "\\n" listKeyMap ++ "\""
-  where
-    colSize = charsPerCol maxChars
-    emptyColRow = rAlign colSize "" ++ lAlign colSize ""
-    sortedKeymap = sortKeymap keyMap
-    colDescription = colDesc colorBinding colorDesc colorTitle colSize
-    listKeyMap = buildKeyMap (buildColumns (map colDescription sortedKeymap)) emptyColRow
-
-    colDesc ::  String -> String -> String -> Int -> [(String, a, Label, String)] -> [String]
-    colDesc colorBinding colorDesc colorTitle colSize bindings=
-        (colStr colorTitle ++ rAlign colSize (getLabel bindings) ++ lAlign (colSize + 1) "") :
-        [ colStr colorBinding
-              ++ rAlign colSize key
-              ++ " "
-              ++ colStr colorDesc
-              ++ lAlign colSize desc
-        | (key, _, _, desc) <- bindings
-        ]
-
-charsPerCol :: Int -> Int
-charsPerCol maxChars = quot (quot maxChars 3) 2 -- 3 columns by 2 (key, description)
-
-getLabel :: [(a, b, Label, c)] -> String
-getLabel ((_, _, label, _):_) =  show label
-getLabel [] = ""
-
-colStr :: String -> String
-colStr col = "^fg(" ++ col ++ ")"
-
-textAlign :: (Int -> Char -> T.Text -> T.Text) -> Int -> (String -> String)
-textAlign fAlign n = T.unpack . fAlign n ' ' . T.pack
-
-rAlign :: Int -> String -> String
-rAlign = textAlign T.justifyRight
-
-lAlign :: Int -> String -> String
-lAlign = textAlign T.justifyLeft
-
-trd :: (a, b, c, d) -> c
-trd (_, _, c, _) =  c
-
-buildColumns :: [[String]] -> [[String]]
-buildColumns keyGroups = columns
-  where
-    keyCol = concat keyGroups
-    columnsLength = ceiling (fromIntegral(length keyCol) / 3)
-    columns = chunksOf columnsLength keyCol
-
-
-buildKeyMap :: [[String]] -> String -> [String]
-buildKeyMap [a] filler = buildSection a [] [] filler
-buildKeyMap [a,b] filler = buildSection a b [] filler
-buildKeyMap [a,b,c] filler = buildSection a b c filler
-buildKeyMap (a:b:c:xs) filler = buildSection a b c filler ++ buildKeyMap xs filler
-
-buildSection :: [String] -> [String] -> [String] -> String -> [String]
-buildSection a b c filler = zipWith3 (\x y z -> x ++ y ++ z) (fillColumn a)  (fillColumn b)  (fillColumn c)
-  where rows = max (length a) $ max (length b) (length c)
-        fillColumn col = col ++ replicate (rows - length col) filler
-
-sortKeymap :: [(String, a, Label, String)] -> [[(String, a, Label, String)]]
-sortKeymap = map sortByKeyBinding . groupByLabel
-
-sortByKeyBinding :: [(String, a, Label, String)] -> [(String, a , Label, String)]
-sortByKeyBinding = L.sortBy (\(a, _, _, _) (b, _, _ ,_ ) -> compare a b)
-
-groupByLabel :: [(String, a, Label, String)] -> [[(String, a, Label, String)]]
-groupByLabel = L.groupBy (\a b -> trd a == trd b) . L.sortBy (\a b -> compare (trd a)  (trd b))
-
-showHelp :: X ()
-showHelp = spawn $ unwords
-    [ "$HOME/.config/xmonad/scripts/showHintForKeymap.sh"
-    , desc
-    ]
-    where desc = fmtHint myKeymapH TH.brightBlue TH.brightGreen TH.brightRed 180
-
 -- Order displayed
 -- Label used for displaying keys
 data Label =
@@ -587,13 +506,111 @@ data Label =
   deriving (Eq, Ord)
 
 instance Show Label where
-  show ClientLabel = "Client"
-  show LayoutLabel = "Layout"
-  show TagLabel = "Tag"
-  show ScreenLabel = "Screen"
+  show ClientLabel   = "Client"
+  show LayoutLabel   = "Layout"
+  show TagLabel      = "Tag"
+  show ScreenLabel   = "Screen"
   show LauncherLabel = "Launcher"
-  show MediaLabel = "MediaLabel"
-  show MiscLabel = "MiscLabel"
+  show MediaLabel    = "Media"
+  show MiscLabel     = "Misc"
+
+type KeySequence = String
+type Description = String
+type KeyHint = (KeySequence, Label, Description)
+type KeyMap = (KeySequence, X ())
+type KeyMapHint = (KeySequence, X (), Label, Description)
+
+fmtHint :: [KeyHint] -> String -> String -> String -> Int -> String
+fmtHint keyMap colorBinding colorDesc colorTitle maxChars =
+   "\"\\n" ++ L.intercalate "\\n" listKeyMap ++ "\""
+  where
+    colSize = charsPerCol maxChars
+    emptyColRow = rAlign colSize "" ++ lAlign colSize ""
+    sortedKeymap = sortKeymap keyMap
+    colDescription = colDesc colorBinding colorDesc colorTitle colSize
+    listKeyMap = buildKeyMap (buildColumns (map colDescription sortedKeymap)) emptyColRow
+
+    colDesc ::  String -> String -> String -> Int -> [KeyHint] -> [String]
+    colDesc colorBinding colorDesc colorTitle colSize bindings=
+        (colStr colorTitle ++ rAlign colSize (getLabel bindings) ++ lAlign (colSize + 1) "") :
+        [ colStr colorBinding
+              ++ rAlign colSize key
+              ++ " "
+              ++ colStr colorDesc
+              ++ lAlign colSize desc
+        | (key, _, desc) <- bindings
+        ]
+
+    charsPerCol :: Int -> Int
+    charsPerCol maxChars = quot (quot maxChars 3) 2 -- 3 columns by 2 (key, description)
+
+    getLabel :: [KeyHint] -> String
+    getLabel ((_, label, _):_) =  show label
+    getLabel [] = ""
+
+
+    textAlign :: (Int -> Char -> T.Text -> T.Text) -> Int -> (String -> String)
+    textAlign fAlign n = T.unpack . fAlign n ' ' . T.pack
+
+    rAlign :: Int -> String -> String
+    rAlign = textAlign T.justifyRight
+
+    lAlign :: Int -> String -> String
+    lAlign = textAlign T.justifyLeft
+
+    trd :: (a, b, c) -> b
+    trd (_, b, _) =  b
+
+    buildColumns :: [[String]] -> [[String]]
+    buildColumns keyGroups = columns
+      where
+        keyCol = concat keyGroups
+        columnsLength = ceiling (fromIntegral(length keyCol) / 3 :: Double)
+        columns = chunksOf columnsLength keyCol
+
+
+    buildKeyMap :: [[String]] -> String -> [String]
+    buildKeyMap [a] filler = buildSection a [] [] filler
+    buildKeyMap [a,b] filler = buildSection a b [] filler
+    buildKeyMap [a,b,c] filler = buildSection a b c filler
+    buildKeyMap (a:b:c:xs) filler = buildSection a b c filler ++ buildKeyMap xs filler
+
+    buildSection :: [String] -> [String] -> [String] -> String -> [String]
+    buildSection a b c filler = zipWith3 (\x y z -> x ++ y ++ z) (fillColumn a)  (fillColumn b)  (fillColumn c)
+      where rows = max (length a) $ max (length b) (length c)
+            fillColumn col = col ++ replicate (rows - length col) filler
+
+    sortKeymap :: [KeyHint] -> [[KeyHint]]
+    sortKeymap = map sortByKeyBinding . groupByLabel
+
+    sortByKeyBinding :: [KeyHint] -> [KeyHint]
+    sortByKeyBinding = L.sortBy (\(a, _, _) (b, _ ,_ ) -> compare a b)
+
+    groupByLabel :: [KeyHint] -> [[KeyHint]]
+    groupByLabel = L.groupBy (\a b -> trd a == trd b) . L.sortBy (\a b -> compare (trd a)  (trd b))
+
+colStr :: String -> String
+colStr col = "^fg(" ++ col ++ ")"
+
+showHelp :: X ()
+showHelp = spawn $ unwords
+    [ "$HOME/.config/xmonad/scripts/showHintForKeymap.sh"
+    , desc
+    ]
+    where
+      desc = fmtHint myKeyHints TH.brightBlue TH.brightGreen TH.brightRed 180
+      myKeyHints = extraHints ++ [(keySeq, label, description') | (keySeq, _, label, description') <- myKeymapH]
+      extraHints = [
+          ("M " ++ myTagKeys, TagLabel, "Go to Tag")
+          , ("M-S " ++ myTagKeys, TagLabel, "Move window to Tag")
+          , ("M-C " ++ myTagKeys, TagLabel, "Send window to Tag")
+          , ("M-C-S " ++ myTagKeys, TagLabel, "Swap with Tag")
+        ]
+      -- TODO find a way to make the key seq look better
+      -- if I try to separate with a color then the string is not centered because of the length of the string
+      myTagKeys = unwords ["1..9","0", "-", "=", "[", "]", ";" ,"'"]
+      -- separator = colStr TH.darkBlack ++ "/" ++ colStr TH.brightBlue
+
 
 ------------------------------------------------------------------------
 -- Mouse bindings
@@ -636,13 +653,13 @@ myModMask :: KeyMask
 myModMask = mod4Mask
 
 myKeys :: XConfig l -> M.Map (KeyMask, KeySym) (X ())
-myKeys config' = mkKeymap config' $ myKeymap ++ [ (t1, t2) | (t1, t2, _, _) <- myKeymapH]
+myKeys config' = mkKeymap config' myKeymap
 
-myKeymap :: [(String, X ())]
-myKeymap = myWorkspaceMovementKeys
+myKeymap :: [KeyMap]
+myKeymap = myWorkspaceMovementKeys ++ [(keySeq, keyMap) | (keySeq, keyMap, _, _) <- myKeymapH]
 
 -- Keys with hints
-myKeymapH :: [(String, X (), Label, String)]
+myKeymapH :: [KeyMapHint]
 myKeymapH = concat
     [ myControlKeys
     , myLauncherKeys
@@ -653,7 +670,7 @@ myKeymapH = concat
     , myFloatKeys
     ]
 
-myWorkspaceMovementKeys :: [(String, X ())]
+myWorkspaceMovementKeys :: [KeyMap]
 myWorkspaceMovementKeys =
     [ (prefix ++ key, func ws)
     | (prefix, func) <-
@@ -666,7 +683,7 @@ myWorkspaceMovementKeys =
         , ( "M-C-"
           , windows . W.shift
           ) -- send window to workspace
-        , ("M-C-S-", swapWithCurrent) -- change workspace number
+        , ("M-C-S-", swapWithCurrent) -- swap workspace windows
         ]
     , (key   , ws  ) <- zip keys' myWorkspaces
     ]
@@ -674,14 +691,14 @@ myWorkspaceMovementKeys =
     keys'      = fmap return $ ['1' .. '9'] ++ ['0', '-', '=', '[', ']', ';' ,'\'']
     viewShift = liftM2 (.) W.greedyView W.shift
 
-myMovementKeys :: [(String, X (), Label, String)]
+myMovementKeys :: [KeyMapHint]
 myMovementKeys =
     myWindowMovementKeys
         ++ myWorkspaceMovementKeys'
         ++ myScreenMovementKeys
         ++ myGotoLayoutKeys
 
-myWindowMovementKeys :: [(String, X (), Label, String)]
+myWindowMovementKeys :: [KeyMapHint]
 myWindowMovementKeys =
     [ ("M-<D>", windowGo Nav.D, ClientLabel, "Focus down")
     , ("M-<U>", windowGo Nav.U, ClientLabel, "Focus up")
@@ -701,7 +718,7 @@ myWindowMovementKeys =
       )
     ]
     where windowGo = sendMessage . Nav.Go
-myWorkspaceMovementKeys' :: [(String, X (), Label, String)]
+myWorkspaceMovementKeys' :: [KeyMapHint]
 myWorkspaceMovementKeys' =
     [ ( "M-C-<R>"
       , CycleWS.nextWS
@@ -720,7 +737,7 @@ myWorkspaceMovementKeys' =
       ) -- Go to the next
     , ("M-C-h", CycleWS.prevWS, TagLabel, "Previous workspace") --  Go to previous workspace
     ]
-myScreenMovementKeys :: [(String, X (), Label, String)]
+myScreenMovementKeys :: [KeyMapHint]
 myScreenMovementKeys =
     [ ( "M-C-o"
       , sequence_ [CycleWS.nextScreen, warpToWindow (1 % 2) (1 % 2)]
@@ -730,7 +747,7 @@ myScreenMovementKeys =
     , ("M-o"  , CycleWS.swapNextScreen , ScreenLabel, "Swap next screen")
     , ("M-S-o", CycleWS.shiftNextScreen, ScreenLabel, "Shift next screen")
     ]
-myGotoLayoutKeys :: [(String, X (), Label, String)]
+myGotoLayoutKeys :: [KeyMapHint]
 myGotoLayoutKeys =
     [ ("M-g 1", jumpToLayout "Tall"      , LayoutLabel, "Tall")
     , ("M-g 2", jumpToLayout "HintedGrid", LayoutLabel, "HintedGrid")
@@ -743,10 +760,10 @@ myGotoLayoutKeys =
     ]
     where jumpToLayout = sendMessage . JumpToLayout
 
-myLayoutKeys :: [(String, X (), Label, String)]
+myLayoutKeys :: [KeyMapHint]
 myLayoutKeys = myLayoutKeys' ++ myLayoutSwapKeys ++ myLayoutTransformKeys
 
-myLayoutSwapKeys :: [(String, X (), Label, String)]
+myLayoutSwapKeys :: [KeyMapHint]
 myLayoutSwapKeys =
     [ ("M-S-<D>", layoutSwap Nav.D, ClientLabel, "Swap down")
     , ("M-S-<U>", layoutSwap Nav.U, ClientLabel, "Swap up")
@@ -759,7 +776,7 @@ myLayoutSwapKeys =
     ]
     where layoutSwap = sendMessage . Nav.Swap
 
-myLayoutKeys' :: [(String, X (), Label, String)]
+myLayoutKeys' :: [KeyMapHint]
 myLayoutKeys' =
     [ ( "M-f"
       , sendMessage $ Toggle NBFULL
@@ -789,7 +806,7 @@ myLayoutKeys' =
     , ("M-m", windows W.shiftMaster, ClientLabel, "Shift with master") -- Shift the focused window to the master window
     ]
 
-myLayoutTransformKeys :: [(String, X (), Label, String)]
+myLayoutTransformKeys :: [KeyMapHint]
 myLayoutTransformKeys =
     [ ("M-,"  , sendMessage Shrink            , LayoutLabel, "Decrease horizontally")
     , ("M-."  , sendMessage Expand            , LayoutLabel, "Increase vertically")
@@ -802,7 +819,7 @@ myLayoutTransformKeys =
     , ("M-C-<Tab>", rotAllDown, LayoutLabel, "Rotate all windows")
     ]
 
-myWorkspaceKeys :: [(String, X (), Label, String)]
+myWorkspaceKeys :: [KeyMapHint]
 myWorkspaceKeys =
     [ ( "M-C-S-<R>"
       , CycleWS.shiftToNext
@@ -827,7 +844,7 @@ myWorkspaceKeys =
     , ("M-<Tab>", CycleWS.toggleWS, TagLabel, "Toggle last workspace") -- toggle last workspace
     ]
 
-myFloatKeys :: [(String, X (), Label, String)]
+myFloatKeys :: [KeyMapHint]
 myFloatKeys =
     [ ("M-a s", withFocused $ windows . W.sink, ClientLabel, "Sink floating")
     , ("M-a b", withFocused $ windows . flip W.float bigCenterR, ClientLabel, "Float big center")
@@ -842,10 +859,10 @@ myFloatKeys =
       leftR = W.RationalRect 0 (1 / 8) (1 / 2) (3 / 4)
       rightR = W.RationalRect (4 / 8) (1 / 8) (1 / 2) (3 / 4)
 
-myLauncherKeys :: [(String, X (), Label, String)]
+myLauncherKeys :: [KeyMapHint]
 myLauncherKeys = myLauncherKeys' ++ myScreenCaptureKeys
 
-myLauncherKeys' :: [(String, X (), Label, String)]
+myLauncherKeys' :: [KeyMapHint]
 myLauncherKeys' =
     [ ( "M-<Return>"
       , spawn myTerminal
@@ -879,7 +896,7 @@ myLauncherKeys' =
       )
     ]
 
-myScreenCaptureKeys :: [(String, X (), Label, String)]
+myScreenCaptureKeys :: [KeyMapHint]
 myScreenCaptureKeys =
     [ ( "<Print>"
       , spawn $ myScreenCapture ++ " --fullscreen"
@@ -898,7 +915,7 @@ myScreenCaptureKeys =
       )
     ]
 
-myMediaLabelKeys :: [(String, X (), Label, String)]
+myMediaLabelKeys :: [KeyMapHint]
 myMediaLabelKeys =
     -- Play / Pause media
     [ ("<XF86AudioPlay>", spawn "playerctl play-pause", MediaLabel, "MediaLabel play/pause")
@@ -948,7 +965,7 @@ myMediaLabelKeys =
     , ("<XF86Explorer>", spawn myBrowser, LauncherLabel, "Browser") -- Browser
     ]
 
-myControlKeys :: [(String, X (), Label, String)]
+myControlKeys :: [KeyMapHint]
 myControlKeys =
     [ ( "M-S-q" , kill , ClientLabel , "Kill focused")
     , ( "M-S-C-q" , killAll , ClientLabel , "Kill all in workspace")

@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 
 ## run (only once) processes which spawn with the same name
-# function run {
-#    if (command -v $1 && ! pgrep $1); then
-#      $@&
-#    fi
-# }
-
-run() {
-  [ -z "$(pidof -x $1)" ] && $@&
+function run {
+   if (command -v $1 && ! pgrep $1); then
+     $@&
+   fi
 }
+
+# run() {
+#   [ -z "$(pidof -x $1)" ] && $@&
+# }
 
 # (sleep 2; run $HOME/.config/polybar/launch.sh) &
 
@@ -63,6 +63,6 @@ if [ -f ~/.scripts/autostart_work.sh ]; then
   ~/.scripts/autostart_work.sh
 fi
 
-# run xautolock -time 7 -locker lock
+run xautolock -time 7 -locker lock -notifier "notify-send 'Locker' 'Locking screen in 30 seconds'"
 run xset s 500 &
-xautolock -time 10 -locker lock -notify 30 -notifier "notify-send 'Locker' 'Locking screen in 30 seconds'" -killtime 7 -killer "systemctl suspend" &
+# xautolock -time 10 -locker lock -notify 30 -notifier "notify-send 'Locker' 'Locking screen in 30 seconds'" -killtime 7 -killer "systemctl suspend" &
