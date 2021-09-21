@@ -81,11 +81,8 @@ myBar() {
 
         while :; do
                 refresh
-                if [ -z "$weather" ]; then
-                        printf '?\n'
-                        sleep 5m
-                elif [[ "$weather" =~ "Unknown" ]]; then
-                        printf '?\n'
+                if [ -z "$weather" ] || [[ "$weather" =~ "Unknown" || "$weather" =~ "Sorry" ]]; then
+                        printf '<fc=%s,%s>ﮊ</fc>\n' "$yellow" "$background"
                         sleep 5m
                 else
                         printf '<fc=%s,%s>%s</fc><fc=%s,%s> %s</fc>\n' \

@@ -63,6 +63,6 @@ if [ -f ~/.scripts/autostart_work.sh ]; then
   ~/.scripts/autostart_work.sh
 fi
 
-run xautolock -time 7 -locker lock -notifier "notify-send 'Locker' 'Locking screen in 30 seconds'"
+run xautolock -time 10 -locker lock -notify 30 -notifier "notify-send 'Locker' 'Locking screen in 30 seconds'"
 run xset s 500 &
 # xautolock -time 10 -locker lock -notify 30 -notifier "notify-send 'Locker' 'Locking screen in 30 seconds'" -killtime 7 -killer "systemctl suspend" &
