@@ -18,7 +18,7 @@ import qualified XMonad.Hooks.ManageDocks            as ManageDocks
 import qualified XMonad.Hooks.ManageHelpers          as ManageHelpers
 import qualified XMonad.Hooks.UrgencyHook            as UH
 import           XMonad.Hooks.InsertPosition         ( insertPosition, Focus(Newer),
-                                                      Position(End) )
+                                                      Position(Below) )
 
 import           XMonad.Hooks.StatusBar              (StatusBarConfig,
                                                       statusBarProp, withSB)
@@ -93,13 +93,21 @@ import           Data.Semigroup (All)
 import qualified XMonad.Config.Prime                 as ManageHelpers
 
 import           System.Exit                         (exitSuccess)
+import           System.Environment                  (lookupEnv)
+import           Data.Maybe                          (fromMaybe, isJust)
+import           System.IO.Unsafe                    (unsafeDupablePerformIO)
+import           XMonad.Hooks.UrgencyHook            (UrgencyConfig(UrgencyConfig))
 
 ------------------------------------------------------------------------
 -- Main
 --
 main :: IO ()
 main = do
-     xmonad . Hacks.javaHack . withSB mySB . ewmhFullscreen . ewmh $ UH.withUrgencyHook UH.NoUrgencyHook  myConfig
+     xmonad . Hacks.javaHack . withSB mySB . ewmhFullscreen . ewmh $ UH.withUrgencyHookC urgencyStyle urgencyConfig  myConfig
+     where
+       urgencyConfig = UrgencyConfig UH.Focused UH.Dont
+       urgencyStyle = UH.BorderUrgencyHook TH.brightMagenta
+
 
 
 ------------------------------------------------------------------------
@@ -122,6 +130,14 @@ myConfig = def { borderWidth        = myBorderWidth
               --           >> nsHideOnFocusLoss myScratchPads
                }
 
+-- Read environment variables or use default
+envVar :: String -> String -> String
+envVar envName defaultVar =
+   unsafeDupablePerformIO var
+   where
+     var = do
+       maybeEnv <- lookupEnv envName
+       return $ fromMaybe defaultVar maybeEnv
 
 ------------------------------------------------------------------------
 -- Default Apps
@@ -131,7 +147,7 @@ myScreenCapture :: String
 myScreenCapture = "xfce4-screenshooter"
 
 myTerminal :: String
-myTerminal = "alacritty"
+myTerminal =  envVar "TERMINAL" "alacritty"
 
 -- Launcher
 myLauncher :: String
@@ -143,18 +159,18 @@ myWindowSelector = "rofi -show window -show-icons"
 myClipboard :: String
 myClipboard = "rofi -modi 'clipboard:greenclip print' -show clipboard -run-command '{cmd}'"
 
--- Editor
-myTextEditor :: String
--- myTextEditor = "emacsclient -c -a emacs"
-myTextEditor = "nvim"
+-- -- Editor
+-- myTextEditor :: String
+-- -- myTextEditor = "emacsclient -c -a emacs"
+-- myTextEditor = "nvim"
 
 -- Browser
 myBrowser :: String
-myBrowser = "firefox"
+myBrowser = envVar "BROWSER" "firefox"
 
 -- File Manager
 myFileManager :: String
-myFileManager = "thunar"
+myFileManager = envVar "FILE_MANAGER" "thunar"
 
 -- Console File Manager
 myConsoleFileManager :: String
@@ -361,11 +377,18 @@ myManageHook :: ManageHook
 myManageHook = composeAll
     [
      ManageDocks.manageDocks
-    , insertPosition End Newer -- open new windows at the end
+     -- open windows at the end if they are not floating
+    , fmap not willFloat --> insertPosition Below Newer
     , floatNextHook
     , myManageHook'
     ]
 
+willFloat :: Query Bool
+willFloat = ask >>= \w -> liftX $ withDisplay $ \d -> do
+  sh <- io $ getWMNormalHints d w
+  let isFixedSize = isJust (sh_min_size sh) && sh_min_size sh == sh_max_size sh
+  isTransient <- isJust <$> io (getTransientForHint d w)
+  return (isFixedSize || isTransient)
 --
 -- https://wiki.haskell.org/Xmonad/Frequently_asked_questions
 -- xprop fields used in manage hook:
@@ -452,7 +475,7 @@ myStartupHook :: X ()
 myStartupHook = do
     checkKeymap myConfig myKeymap
     -- Cursor.setDefaultCursor Cursor.xC_left_ptr
-    spawn "$HOME/.config/xmonad/scripts/autostart.sh"
+    spawnOnce "$HOME/.config/xmonad/scripts/autostart.sh"
     spawnOnce
       ("stalonetray --geometry 1x1-17+5 --max-geometry 10x1-17+5 --transparent --tint-color '"
       ++ TH.darkBlack
