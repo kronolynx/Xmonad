@@ -18,7 +18,7 @@ import qualified XMonad.Hooks.ManageDocks            as ManageDocks
 import qualified XMonad.Hooks.ManageHelpers          as ManageHelpers
 import qualified XMonad.Hooks.UrgencyHook            as UH
 import           XMonad.Hooks.InsertPosition         ( insertPosition, Focus(Newer),
-                                                      Position(Below) )
+                                                      Position(End) )
 
 import           XMonad.Hooks.StatusBar              (StatusBarConfig,
                                                       statusBarProp, withSB)
@@ -90,7 +90,6 @@ import qualified Data.Text                           as T
 import           Data.Char                           ( toLower )
 import           Data.Ratio                          ( (%) )
 import           Data.Semigroup (All)
-import qualified XMonad.Config.Prime                 as ManageHelpers
 
 import           System.Exit                         (exitSuccess)
 import           System.Environment                  (lookupEnv)
@@ -223,12 +222,12 @@ myLayout =
         $
   -- Layouts
             name "Tall"       myTile
-        ||| name "HintedGrid" myHintedGrid
-        ||| name "Tabbed"     myTabbed
         ||| name "OneBig"     myOneBig
+        ||| name "Tabbed"     myTabbed
+        ||| name "HintedGrid" myHintedGrid
+        ||| name "ThreeCol"   my3cmi
         ||| name "Circle"     Circle
         ||| name "Mosaic"     myMosaic
-        ||| name "ThreeCol"   my3cmi
         ||| name "Spiral"     mySpiral
   where
     name n = renamed [Replace n] . mySpacing 8
@@ -378,7 +377,7 @@ myManageHook = composeAll
     [
      ManageDocks.manageDocks
      -- open windows at the end if they are not floating
-    , fmap not willFloat --> insertPosition Below Newer
+    , fmap not willFloat --> insertPosition End Newer
     , floatNextHook
     , myManageHook'
     ]
@@ -409,12 +408,14 @@ myManageHook' =
           , [ className =? c --> doShift (myWorkspaces !! ws) | (c, ws) <- myShifts ]
           , [ title =? c --> doShift (myWorkspaces !! ws) | (c, ws) <- myTitleShifts ]
           , [ className =? c --> hasBorder False  | c <- myClassNoBorder]
+          , [ role =? r --> ManageHelpers.doCenterFloat | r <- myRoleCenterFloats]
           , [(className =? "firefox" <&&> resource =? "Dialog") --> doFloat ] -- Float Firefox Dialog
           , [ManageHelpers.isFullscreen -->  ManageHelpers.doFullFloat]
-          , [ManageHelpers.isDialog --> ManageHelpers.doFloat]
+          , [ManageHelpers.isDialog --> doFloat]
           , [namedScratchpadManageHook myScratchPads]
           ]
   where
+    role = stringProperty "WM_WINDOW_ROLE"
     myCenterFloats = ["zenity", "Arandr", "Galculator", "albert"]
     myTitleCenterFloats =
       [ "File Operation Progress"
@@ -435,6 +436,7 @@ myManageHook' =
       , "toolbar"
       , "Peek"
       ]
+    myRoleCenterFloats = ["GtkFileChooserDialog"]
     myTitleFloats = ["Media viewer", "Yad"]
     myFullFloats  = []
       -- workspace numbers start at 0
