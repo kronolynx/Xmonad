@@ -143,7 +143,7 @@ envVar envName defaultVar =
 --
 -- Capture Screen
 myScreenCapture :: String
-myScreenCapture = "xfce4-screenshooter"
+myScreenCapture = "$HOME/.scripts/screen_shot.sh"
 
 myTerminal :: String
 myTerminal =  envVar "TERMINAL" "alacritty"
@@ -923,17 +923,17 @@ myLauncherKeys' =
 myScreenCaptureKeys :: [KeyMapHint]
 myScreenCaptureKeys =
     [ ( "<Print>"
-      , spawn $ myScreenCapture ++ " --fullscreen"
+      , spawn $ myScreenCapture ++ " desktop"
       , MiscLabel
       , "Take a screenshot (desktop)"
       )
     , ( "S-<Print>"
-      , spawn $ myScreenCapture ++ " --region"
+      , spawn $ myScreenCapture ++ " area"
       , MiscLabel
       , "Take a screenshot (area)"
       )
     , ( "C-<Print>" --
-      , spawn $ myScreenCapture ++ " --window --no-border"
+      , spawn $ myScreenCapture ++ " window"
       , MiscLabel
       , "Take a screenshot (window)"
       )
