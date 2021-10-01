@@ -447,7 +447,6 @@ myManageHook' =
       , ("Postman"           , 6)
       , ("DevCenter"         , 6)
       , ("jetbrains-idea-ce" , 2)
-      , ("firefox"           , 0)
       , ("Chromium"          , 13)
       , ("Joplin"            , 6)
       , ("Transmission-gtk"  , 11)
