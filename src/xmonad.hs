@@ -96,6 +96,7 @@ import           System.Environment                  (lookupEnv)
 import           Data.Maybe                          (fromMaybe, isJust)
 import           System.IO.Unsafe                    (unsafeDupablePerformIO)
 import           XMonad.Hooks.UrgencyHook            (UrgencyConfig(UrgencyConfig))
+import XMonad.Hooks.ManageHelpers (isInProperty)
 
 ------------------------------------------------------------------------
 -- Main
@@ -377,10 +378,14 @@ myManageHook = composeAll
     [
      ManageDocks.manageDocks
      -- open windows at the end if they are not floating
-    , fmap not willFloat --> insertPosition End Newer
+    , fmap not (willFloat <||> checkModal) --> insertPosition End Newer
     , floatNextHook
     , myManageHook'
     ]
+
+-- | Check if window is modal
+checkModal :: Query Bool
+checkModal = isInProperty "_NET_WM_STATE" "_NET_WM_STATE_MODAL"
 
 willFloat :: Query Bool
 willFloat = ask >>= \w -> liftX $ withDisplay $ \d -> do
@@ -413,6 +418,7 @@ myManageHook' =
           , [ManageHelpers.isFullscreen -->  ManageHelpers.doFullFloat]
           , [ManageHelpers.isDialog --> doFloat]
           , [namedScratchpadManageHook myScratchPads]
+          , [checkModal --> ManageHelpers.doCenterFloat]
           ]
   where
     role = stringProperty "WM_WINDOW_ROLE"
