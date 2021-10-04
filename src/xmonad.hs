@@ -919,7 +919,7 @@ myLauncherKeys' =
       , LauncherLabel
       , "Kill Window"
       ) -- Kill window
-    , ( "M-S-C-="
+    , ( "M-C-S-x"
       , spawn "$HOME/.scripts/xbacklight-toggle.sh"
       , LauncherLabel
       , "Toggle backlight"

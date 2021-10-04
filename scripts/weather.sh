@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 refresh() {
     for _ in 1 2 3 4 5; do
         if ping -q -c 1 -W 1 8.8.8.8 >/dev/null 2>&1; then
@@ -81,13 +81,13 @@ myBar() {
 
     while :; do
         refresh
-        if [ -z "$weather" ] || [[ "$weather" =~ "Unknown" || "$weather" =~ "Sorry" ]]; then
-            printf '<fc=%s,%s>ﮊ</fc>\n' "$yellow" "$background"
-            sleep 5m
-        else
+        if [[ "$temperature" =~ "°C" ]]; then
             printf '<fc=%s,%s>%s</fc><fc=%s,%s> %s</fc>\n' \
                 "$yellow" "#2c313a" "$icon" "$white" "$background" "$temperature"
             sleep 15m
+        else 
+            printf '<fc=%s,%s>ﮊ</fc>\n' "$yellow" "$background"
+            sleep 5m
         fi
     done
 }
