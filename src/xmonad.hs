@@ -483,11 +483,11 @@ myStartupHook = do
     checkKeymap myConfig myKeymap
     -- Cursor.setDefaultCursor Cursor.xC_left_ptr
     spawnOnce "$HOME/.config/xmonad/scripts/autostart.sh"
-    spawnOnce
-      ("stalonetray --geometry 1x1-17+5 --max-geometry 10x1-17+5 --transparent --tint-color '"
-      ++ TH.darkBlack
-      ++ "' --tint-level 255 --grow-gravity NE --icon-gravity NW --icon-size 20 --sticky --window-type dock --window-strut top --skip-taskbar"
-      )
+    spawnOnce "stalonetray"
+      -- ("stalonetray --geometry 1x1-17+5 --max-geometry 10x1-17+5 --transparent --tint-color '"
+      -- ++ TH.darkBlack
+      -- ++ "' --tint-level 255 --grow-gravity NE --icon-gravity NW --icon-size 20 --sticky --window-type dock --window-strut top --skip-taskbar"
+      -- )
 
 myHandleEventHook :: Event -> X All
 myHandleEventHook =
@@ -769,13 +769,13 @@ myWorkspaceMovementKeys' =
     ]
 myScreenMovementKeys :: [KeyMapHint]
 myScreenMovementKeys =
-    [ ( "M-C-o"
+    [ ("M-o"  , CycleWS.swapNextScreen , ScreenLabel, "Swap next screen")
+    , ( "M-S-o"
       , sequence_ [CycleWS.nextScreen, warpToWindow (1 % 2) (1 % 2)]
       , ScreenLabel
-      , "Next screen"
+      , "Focus next screen"
       ) -- Move the focus to next screen (multi screen)
-    , ("M-o"  , CycleWS.swapNextScreen , ScreenLabel, "Swap next screen")
-    , ("M-S-o", CycleWS.shiftNextScreen, ScreenLabel, "Shift next screen")
+    , ("M-C-o", CycleWS.shiftNextScreen, ScreenLabel, "Send client to next screen")
     ]
 myGotoLayoutKeys :: [KeyMapHint]
 myGotoLayoutKeys =
