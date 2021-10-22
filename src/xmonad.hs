@@ -101,9 +101,12 @@ import XMonad.Hooks.ManageHelpers (isInProperty)
 ------------------------------------------------------------------------
 -- Main
 --
+import XMonad.Config.Kde
+
 main :: IO ()
 main = do
-     xmonad . Hacks.javaHack . withSB mySB . ewmhFullscreen . ewmh $ UH.withUrgencyHookC urgencyStyle urgencyConfig  myConfig
+    --  xmonad . Hacks.javaHack . withSB mySB . ewmhFullscreen . ewmh $ UH.withUrgencyHookC urgencyStyle urgencyConfig  myConfig
+     xmonad .  Hacks.javaHack . ewmhFullscreen . ewmh $ UH.withUrgencyHookC urgencyStyle urgencyConfig  myConfig
      where
        urgencyConfig = UrgencyConfig UH.Focused UH.Dont
        urgencyStyle = UH.BorderUrgencyHook TH.brightMagenta
@@ -113,7 +116,7 @@ main = do
 ------------------------------------------------------------------------
 -- Config
 --
-myConfig = def { borderWidth        = myBorderWidth
+myConfig =  kdeConfig { borderWidth        = myBorderWidth
                , normalBorderColor  = myNormalBorderColor
                , focusedBorderColor = myFocusedBorderColor
                , focusFollowsMouse  = myFocusFollowsMouse
@@ -122,7 +125,7 @@ myConfig = def { borderWidth        = myBorderWidth
                , workspaces         = myWorkspaces
                , mouseBindings      = myMouseBindings
                , keys               = myKeys
-               , manageHook         = myManageHook
+               , manageHook         = manageHook kdeConfig <+> myManageHook
                , layoutHook         = myLayout
                , startupHook        = myStartupHook
                , handleEventHook    = myHandleEventHook
@@ -438,6 +441,8 @@ myManageHook' =
       , "Gimp"
       , "notification"
       , "pinentry-gtk-2"
+      , "Plasma-desktop"
+      , "plasmashell"
       , "splash"
       , "toolbar"
       , "Peek"
@@ -482,8 +487,8 @@ myStartupHook :: X ()
 myStartupHook = do
     checkKeymap myConfig myKeymap
     -- Cursor.setDefaultCursor Cursor.xC_left_ptr
-    spawnOnce "$HOME/.config/xmonad/scripts/autostart.sh"
-    spawnOnce "stalonetray"
+    -- spawnOnce "$HOME/.config/xmonad/scripts/autostart.sh"
+    -- spawnOnce "stalonetray"
       -- ("stalonetray --geometry 1x1-17+5 --max-geometry 10x1-17+5 --transparent --tint-color '"
       -- ++ TH.darkBlack
       -- ++ "' --tint-level 255 --grow-gravity NE --icon-gravity NW --icon-size 20 --sticky --window-type dock --window-strut top --skip-taskbar"
