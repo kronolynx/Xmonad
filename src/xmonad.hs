@@ -11,8 +11,14 @@ import           XMonad                              hiding ( (|||) )
 
 import qualified Theme.Theme                         as TH
 
+-- config
+import           XMonad.Config.Desktop              (desktopConfig)
+import           XMonad.Config.Gnome                (gnomeConfig)
+import           XMonad.Config.Kde                  (kdeConfig)
+import           XMonad.Config.Xfce                 (xfceConfig)
+
 -- hooks
-import           XMonad.Hooks.EwmhDesktops            ( ewmh, ewmhFullscreen )
+import           XMonad.Hooks.EwmhDesktops            ( ewmhFullscreen, ewmh )
 import           XMonad.Hooks.FloatNext               ( floatNextHook )
 import qualified XMonad.Hooks.ManageDocks            as ManageDocks
 import qualified XMonad.Hooks.ManageHelpers          as ManageHelpers
@@ -96,24 +102,28 @@ import           System.Environment                  (lookupEnv)
 import           Data.Maybe                          (fromMaybe, isJust)
 import           System.IO.Unsafe                    (unsafeDupablePerformIO)
 import           XMonad.Hooks.UrgencyHook            (UrgencyConfig(UrgencyConfig))
-import XMonad.Hooks.ManageHelpers (isInProperty)
+import           XMonad.Hooks.ManageHelpers          (isInProperty)
 
+
+--
+-- desktop :: DESKTOP_SESSION -> desktop_configuration
+--
+desktop "gnome"         = gnomeConfig
+desktop "xmonad-gnome"  = gnomeConfig
+desktop "kde"           = kdeConfig
+desktop "kde-plasma"    = kdeConfig
+desktop "plasma"        = kdeConfig
+desktop "xfce"          = xfceConfig
+desktop _               = desktopConfig
 ------------------------------------------------------------------------
 -- Main
 --
 main :: IO ()
 main = do
-     xmonad . Hacks.javaHack . withSB mySB . ewmhFullscreen . ewmh $ UH.withUrgencyHookC urgencyStyle urgencyConfig  myConfig
-     where
-       urgencyConfig = UrgencyConfig UH.Focused UH.Dont
-       urgencyStyle = UH.BorderUrgencyHook TH.brightMagenta
-
-
-
-------------------------------------------------------------------------
--- Config
---
-myConfig = def { borderWidth        = myBorderWidth
+    session <- lookupEnv "DESKTOP_SESSION"
+    let defDesktopConfig = maybe desktopConfig desktop session
+        myDesktopConfig = defDesktopConfig {
+                 borderWidth        = myBorderWidth
                , normalBorderColor  = myNormalBorderColor
                , focusedBorderColor = myFocusedBorderColor
                , focusFollowsMouse  = myFocusFollowsMouse
@@ -122,13 +132,48 @@ myConfig = def { borderWidth        = myBorderWidth
                , workspaces         = myWorkspaces
                , mouseBindings      = myMouseBindings
                , keys               = myKeys
-               , manageHook         = myManageHook
+               , manageHook         = myManageHook <+> manageHook defDesktopConfig
                , layoutHook         = myLayout
-               , startupHook        = myStartupHook
+               , startupHook        = myStartupHook <+> checkKeymap myDesktopConfig myKeymap
                , handleEventHook    = myHandleEventHook
               --  , logHook = refocusLastLogHook
               --           >> nsHideOnFocusLoss myScratchPads
-               }
+        }
+
+    if session == Just "xmonad"
+      then do
+        let urgencyConfig = UrgencyConfig UH.Focused UH.Dont
+        let urgencyStyle = UH.BorderUrgencyHook TH.brightMagenta
+        xmonad . Hacks.javaHack . withSB mySB . ewmhFullscreen . ewmh  $ UH.withUrgencyHookC urgencyStyle urgencyConfig myDesktopConfig {
+          startupHook = myStartupHook <+> do
+            checkKeymap myDesktopConfig myKeymap
+            spawnOnce "$HOME/.config/xmonad/scripts/autostart.sh"
+            spawnOnce "stalonetray"
+        }
+      else do xmonad $ ewmhFullscreen $ ewmh  myDesktopConfig
+    --  xmonad . Hacks.javaHack . withSB mySB . ewmhFullscreen . ewmh $ UH.withUrgencyHookC urgencyStyle urgencyConfig  myConfig
+
+
+
+------------------------------------------------------------------------
+-- Config
+--
+-- myConfig = def { borderWidth        = myBorderWidth
+--                , normalBorderColor  = myNormalBorderColor
+--                , focusedBorderColor = myFocusedBorderColor
+--                , focusFollowsMouse  = myFocusFollowsMouse
+--                , modMask            = myModMask
+--                , terminal           = myTerminal
+--                , workspaces         = myWorkspaces
+--                , mouseBindings      = myMouseBindings
+--                , keys               = myKeys
+--                , manageHook         = myManageHook <+> manageHook configu
+--                , layoutHook         = myLayout
+--                , startupHook        = myStartupHook
+--                , handleEventHook    = myHandleEventHook
+--               --  , logHook = refocusLastLogHook
+--               --           >> nsHideOnFocusLoss myScratchPads
+--                }
 
 -- Read environment variables or use default
 envVar :: String -> String -> String
@@ -138,6 +183,10 @@ envVar envName defaultVar =
      var = do
        maybeEnv <- lookupEnv envName
        return $ fromMaybe defaultVar maybeEnv
+
+-- envVar :: String -> String -> IO (Maybe String)
+-- envVar envName defaultValue =
+--    lookupEnv envName
 
 ------------------------------------------------------------------------
 -- Default Apps
@@ -175,6 +224,9 @@ myFileManager = envVar "FILE_MANAGER" "thunar"
 -- Console File Manager
 myConsoleFileManager :: String
 myConsoleFileManager = myTerminal ++ " -e vifm"
+
+
+-- configu = desktop $ envVar "DESKTOP_SESSION" "xmonad"
 
 -- myLayout
 myPPLayout :: String -> String
@@ -441,6 +493,8 @@ myManageHook' =
       , "splash"
       , "toolbar"
       , "Peek"
+      , "Plasma-desktop"
+      , "plasmashell"
       ]
     myRoleCenterFloats = ["GtkFileChooserDialog"]
     myTitleFloats = ["Media viewer", "Yad"]
@@ -478,12 +532,14 @@ myScratchPads = [ NS "terminal" spawnTerm findTerm manageTerm ]
                  l = 0.95 -w
 
 
+-- Add things to start up here
 myStartupHook :: X ()
-myStartupHook = do
-    checkKeymap myConfig myKeymap
+myStartupHook = return ()
+    -- checkKeymap myConfig myKeymap
+
     -- Cursor.setDefaultCursor Cursor.xC_left_ptr
-    spawnOnce "$HOME/.config/xmonad/scripts/autostart.sh"
-    spawnOnce "stalonetray"
+    -- spawnOnce "$HOME/.config/xmonad/scripts/autostart.sh"
+    -- spawnOnce "stalonetray"
       -- ("stalonetray --geometry 1x1-17+5 --max-geometry 10x1-17+5 --transparent --tint-color '"
       -- ++ TH.darkBlack
       -- ++ "' --tint-level 255 --grow-gravity NE --icon-gravity NW --icon-size 20 --sticky --window-type dock --window-strut top --skip-taskbar"
