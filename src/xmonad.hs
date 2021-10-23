@@ -147,33 +147,10 @@ main = do
         xmonad . Hacks.javaHack . withSB mySB . ewmhFullscreen . ewmh  $ UH.withUrgencyHookC urgencyStyle urgencyConfig myDesktopConfig {
           startupHook = myStartupHook <+> do
             checkKeymap myDesktopConfig myKeymap
-            spawnOnce "$HOME/.config/xmonad/scripts/autostart.sh"
             spawnOnce "stalonetray"
         }
       else do xmonad $ ewmhFullscreen $ ewmh  myDesktopConfig
-    --  xmonad . Hacks.javaHack . withSB mySB . ewmhFullscreen . ewmh $ UH.withUrgencyHookC urgencyStyle urgencyConfig  myConfig
 
-
-
-------------------------------------------------------------------------
--- Config
---
--- myConfig = def { borderWidth        = myBorderWidth
---                , normalBorderColor  = myNormalBorderColor
---                , focusedBorderColor = myFocusedBorderColor
---                , focusFollowsMouse  = myFocusFollowsMouse
---                , modMask            = myModMask
---                , terminal           = myTerminal
---                , workspaces         = myWorkspaces
---                , mouseBindings      = myMouseBindings
---                , keys               = myKeys
---                , manageHook         = myManageHook <+> manageHook configu
---                , layoutHook         = myLayout
---                , startupHook        = myStartupHook
---                , handleEventHook    = myHandleEventHook
---               --  , logHook = refocusLastLogHook
---               --           >> nsHideOnFocusLoss myScratchPads
---                }
 
 -- Read environment variables or use default
 envVar :: String -> String -> String
@@ -474,7 +451,10 @@ myManageHook' =
           ]
   where
     role = stringProperty "WM_WINDOW_ROLE"
-    myCenterFloats = ["zenity", "Arandr", "Galculator", "albert"]
+    myCenterFloats = ["zenity"
+      ,"Arandr"
+      , "Galculator"
+      ]
     myTitleCenterFloats =
       [ "File Operation Progress"
       , "Downloads"
@@ -534,8 +514,8 @@ myScratchPads = [ NS "terminal" spawnTerm findTerm manageTerm ]
 
 -- Add things to start up here
 myStartupHook :: X ()
-myStartupHook = return ()
-    -- checkKeymap myConfig myKeymap
+myStartupHook = do
+    spawnOnce "$HOME/.config/xmonad/scripts/autostart.sh"
 
     -- Cursor.setDefaultCursor Cursor.xC_left_ptr
     -- spawnOnce "$HOME/.config/xmonad/scripts/autostart.sh"
