@@ -416,6 +416,9 @@ myManageHook = composeAll
 checkModal :: Query Bool
 checkModal = isInProperty "_NET_WM_STATE" "_NET_WM_STATE_MODAL"
 
+checkSkipTaskbar :: Query Bool
+checkSkipTaskbar = isInProperty "_NET_WM_STATE" "_NET_WM_STATE_SKIP_TASKBAR"
+
 willFloat :: Query Bool
 willFloat = ask >>= \w -> liftX $ withDisplay $ \d -> do
   sh <- io $ getWMNormalHints d w
@@ -449,12 +452,13 @@ myManageHook' =
           , [ManageHelpers.isDialog --> doFloat]
           , [namedScratchpadManageHook myScratchPads]
           , [checkModal --> ManageHelpers.doCenterFloat]
+          , [(className =? "plasmashell" <&&> checkSkipTaskbar) --> doIgnore <+> hasBorder False ] -- Ignore kde widgets
           ]
   where
     role = stringProperty "WM_WINDOW_ROLE"
     myIgnores = [
-        "Plasma-desktop"
-      , "plasmashell"
+      --   "Plasma-desktop"
+      -- , "plasmashell"
       ]
     myCenterFloats = ["zenity"
       ,"Arandr"
