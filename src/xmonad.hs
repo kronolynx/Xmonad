@@ -196,7 +196,7 @@ myBrowser = envVar "BROWSER" "firefox"
 
 -- File Manager
 myFileManager :: String
-myFileManager = envVar "FILE_MANAGER" "thunar"
+myFileManager = envVar "FILE_MANAGER" "dolphin"
 
 -- Console File Manager
 myConsoleFileManager :: String
@@ -436,6 +436,7 @@ myManageHook' =
         $ [ [ManageHelpers.transience'] -- move transient windows like dialogs/alerts on top of their parents
           , [ className =? c --> doFloat | c <- myClassFloats ]
           , [ className =? c --> ManageHelpers.doFullFloat | c <- myFullFloats ]
+          , [ className =? c --> doIgnore <+> hasBorder False | c <- myIgnores ]
           , [ title =? t --> doFloat | t <- myTitleFloats ]
           , [ className =? c --> ManageHelpers.doCenterFloat | c <- myCenterFloats ]
           , [ title =? t --> ManageHelpers.doCenterFloat | t <- myTitleCenterFloats ]
@@ -451,6 +452,10 @@ myManageHook' =
           ]
   where
     role = stringProperty "WM_WINDOW_ROLE"
+    myIgnores = [
+        "Plasma-desktop"
+      , "plasmashell"
+      ]
     myCenterFloats = ["zenity"
       ,"Arandr"
       , "Galculator"
@@ -473,8 +478,6 @@ myManageHook' =
       , "splash"
       , "toolbar"
       , "Peek"
-      , "Plasma-desktop"
-      , "plasmashell"
       ]
     myRoleCenterFloats = ["GtkFileChooserDialog"]
     myTitleFloats = ["Media viewer", "Yad"]
