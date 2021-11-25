@@ -33,6 +33,7 @@ executables:
       - split
       - text
       - X11 >= 1.10
+      - dbus
   xmobar:
     main: xmobar.hs
     dependencies:

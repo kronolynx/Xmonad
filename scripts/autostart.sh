@@ -5,10 +5,10 @@ function run {
    fi
 }
 
+## detect screen layout automatically
+autorandr -c &>/dev/null
 
-
-$HOME/.scripts/keyboard.sh &
-$HOME/.scripts/monitor.sh &
+# $HOME/.scripts/monitor.sh &
 
 if [ "$DESKTOP_SESSION" == "xmonad" ]; then
     if (command -v start-pulseaudio-x11 && ! pgrep pulseaudio); then
@@ -20,7 +20,7 @@ if [ "$DESKTOP_SESSION" == "xmonad" ]; then
     fi
     run polkit-gnome-authentication-agent-1
     run /usr/lib/xfce4/notifyd/xfce4-notifyd;
-    run feh --bg-scale ~/.wallpapers/girl-anime.jpg;
+    run nitrogen --restore
     run thunar --daemon;
     run nm-applet;
     run volumeicon;
@@ -30,12 +30,14 @@ run picom -C -b;
 
 # set x cursor
 # https://wiki.haskell.org/Xmonad/Frequently_asked_questions#Setting_the_X_cursor
-# xsetroot -cursor_name left_ptr &
-# xset s 500 &
+xsetroot -cursor_name left_ptr &
+xset s 500 &
 
 if [ -f ~/.scripts/autostart_work.sh ]; then
   ~/.scripts/autostart_work.sh
 fi
+
+keyboard # set keyboard
 
 run xautolock -time 10 -locker lock -notify 30 -notifier "notify-send 'Locker' 'Locking screen in 30 seconds'";
 

@@ -20,7 +20,7 @@
 #
 # if lsp not available change resolver to appropriate ghc version
 # https://www.stackage.org
-resolver: lts-18.6
+resolver: lts-18.18
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -44,13 +44,12 @@ packages:
 #
 extra-deps:
   - github: xmonad/x11
-    commit: 8df5483b0801860ee267441f31e35647d0389c37
+    commit: 401bb378a6b5238e37113a712e4360dc6e3bf5c8
   - github: xmonad/xmonad
-    commit: aa18707c3ef96db88208509c2a18c6670e831661
+    commit: dbe9c4f799fd826c199169d012c2d2687b210a7f
   - github: xmonad/xmonad-contrib
-    commit: 04713d2e9c0d2a42b69df3e6024ad419da0700bf
-  - xmobar-0.39
-
+    commit: 2a02fb37531ee9ba1ac59e5483b8bec60e90bc36
+  - xmobar-0.40
 
 # Override default flag values for local packages and extra-deps
 flags:

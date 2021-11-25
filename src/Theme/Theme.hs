@@ -30,6 +30,7 @@ module Theme.Theme ( background
                    , cyan
                    , pictonBlue
                    , myFont
+                   , myFont10
                   --  , myFontGTK
                   --  , myBigFont
                   --  , myBoldFont
@@ -105,6 +106,8 @@ pictonBlue        = "#33bdf5"
 
 myFont :: String
 myFont = "xft:JetBrainsMono Nerd Font:weight=bold:pixelsize=14:antialias=true:hinting=true"
+myFont10 :: String
+myFont10 = "xft:JetBrainsMono Nerd Font:weight=bold:pixelsize=10:antialias=true:hinting=true"
 -- myFont = "xft:Hack:weight=bold:pixelsize=14:antialias=true:hinting=true"
 -- myFontGTK :: String
 -- myFontGTK = ""

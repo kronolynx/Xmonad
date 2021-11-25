@@ -13,12 +13,9 @@ import qualified Theme.Theme                         as TH
 
 -- config
 import           XMonad.Config.Desktop              (desktopConfig)
-import           XMonad.Config.Gnome                (gnomeConfig)
-import           XMonad.Config.Kde                  (kdeConfig)
-import           XMonad.Config.Xfce                 (xfceConfig)
 
 -- hooks
-import           XMonad.Hooks.EwmhDesktops            ( ewmhFullscreen, ewmh )
+import           XMonad.Hooks.EwmhDesktops            ( ewmhFullscreen, ewmh, setEwmhActivateHook )
 import           XMonad.Hooks.FloatNext               ( floatNextHook )
 import qualified XMonad.Hooks.ManageDocks            as ManageDocks
 import qualified XMonad.Hooks.ManageHelpers          as ManageHelpers
@@ -75,11 +72,12 @@ import           XMonad.Actions.Warp                 ( warpToWindow )
 import           XMonad.Actions.WorkspaceNames       ( swapWithCurrent )
 import           XMonad.Actions.RotSlaves            (rotSlavesDown, rotAllDown)
 import           XMonad.Actions.WithAll              (sinkAll, killAll)
+import           XMonad.Actions.EasyMotion (EasyMotionConfig (..), selectWindow, textSize)
 
 import qualified XMonad.StackSet                     as W
 
 import           XMonad.Util.SpawnOnce               (spawnOnce)
-import           XMonad.Util.Loggers                 (xmobarColorL)
+import           XMonad.Util.Loggers                 (xmobarColorL, wrapL)
 import           XMonad.Util.NamedScratchpad
                                                      (customFloating,
                                                       namedScratchpadAction,
@@ -95,7 +93,6 @@ import qualified Data.Map                            as M
 import qualified Data.Text                           as T
 import           Data.Char                           ( toLower )
 import           Data.Ratio                          ( (%) )
-import           Data.Semigroup (All)
 
 import           System.Exit                         (exitSuccess)
 import           System.Environment                  (lookupEnv)
@@ -104,47 +101,54 @@ import           System.IO.Unsafe                    (unsafeDupablePerformIO)
 import           XMonad.Hooks.UrgencyHook            (UrgencyConfig(UrgencyConfig))
 import           XMonad.Hooks.ManageHelpers          (isInProperty)
 
+import qualified DBus as D
+import qualified DBus.Client as D
+import XMonad.Hooks.DynamicLog (dynamicLogWithPP)
 
---
--- desktop :: DESKTOP_SESSION -> desktop_configuration
---
-desktop "gnome"         = gnomeConfig
-desktop "xmonad-gnome"  = gnomeConfig
-desktop "kde"           = kdeConfig
-desktop "kde-plasma"    = kdeConfig
-desktop "plasma"        = kdeConfig
-desktop "xfce"          = xfceConfig
-desktop _               = desktopConfig
 ------------------------------------------------------------------------
 -- Main
 --
 main :: IO ()
 main = do
     session <- lookupEnv "DESKTOP_SESSION"
-    let defDesktopConfig = maybe desktopConfig desktop session
-        myDesktopConfig = defDesktopConfig {
-                 borderWidth        = myBorderWidth
-               , normalBorderColor  = myNormalBorderColor
-               , focusedBorderColor = myFocusedBorderColor
-               , focusFollowsMouse  = myFocusFollowsMouse
-               , modMask            = myModMask
-               , terminal           = myTerminal
-               , workspaces         = myWorkspaces
-               , mouseBindings      = myMouseBindings
-               , keys               = myKeys
-               , manageHook         = myManageHook <+> manageHook defDesktopConfig
-               , layoutHook         = myLayout
-               , startupHook        = myStartupHook <+> checkKeymap myDesktopConfig myKeymap
-               , handleEventHook    = myHandleEventHook
-              --  , logHook = refocusLastLogHook
-              --           >> nsHideOnFocusLoss myScratchPads
+    let myDesktopConfig = desktopConfig {
+            borderWidth        = myBorderWidth
+          , normalBorderColor  = myNormalBorderColor
+          , focusedBorderColor = myFocusedBorderColor
+          , focusFollowsMouse  = myFocusFollowsMouse
+          , modMask            = myModMask
+          , terminal           = myTerminal
+          , workspaces         = myWorkspaces
+          , mouseBindings      = myMouseBindings
+          , keys               = myKeys
+          , manageHook         = myManageHook <+> manageHook desktopConfig
+          , layoutHook         = myLayout
+          , startupHook        = myStartupHook <+> checkKeymap myDesktopConfig myKeymap
+          , handleEventHook    = handleEventHook desktopConfig
+          --  , logHook = refocusLastLogHook
+          --           >> nsHideOnFocusLoss myScratchPads
         }
 
     if session == Just "xmonad"
       then do
+        dbus <- D.connectSession
+        -- Request access to the DBus name
+        _ <- D.requestName dbus (D.busName_ "org.xmonad.Log")
+            [D.nameAllowReplacement, D.nameReplaceExisting, D.nameDoNotQueue]
+
         let urgencyConfig = UrgencyConfig UH.Focused UH.Dont
         let urgencyStyle = UH.BorderUrgencyHook TH.brightMagenta
-        xmonad . Hacks.javaHack . withSB mySB . ewmhFullscreen . ewmh  $ UH.withUrgencyHookC urgencyStyle urgencyConfig myDesktopConfig {
+        xmonad . Hacks.javaHack . ManageDocks.docks . setEwmhActivateHook UH.doAskUrgent . ewmhFullscreen . ewmh  $ UH.withUrgencyHookC urgencyStyle urgencyConfig myDesktopConfig {
+          startupHook = myStartupHook <+> do
+            checkKeymap myDesktopConfig myKeymap
+            spawnOnce "polybar bar-xmonad"
+          , logHook = myPolybarLogHook dbus
+        }
+    else if session == Just "xmonad-xmobar"
+      then do
+        let urgencyConfig = UrgencyConfig UH.Focused UH.Dont
+        let urgencyStyle = UH.BorderUrgencyHook TH.brightMagenta
+        xmonad . Hacks.javaHack . withSB myXmobarSB . ewmhFullscreen . ewmh  $ UH.withUrgencyHookC urgencyStyle urgencyConfig myDesktopConfig {
           startupHook = myStartupHook <+> do
             checkKeymap myDesktopConfig myKeymap
             spawnOnce "stalonetray"
@@ -173,7 +177,7 @@ myScreenCapture :: String
 myScreenCapture = "$HOME/.scripts/screen_shot.sh"
 
 myTerminal :: String
-myTerminal =  envVar "TERMINAL" "alacritty"
+myTerminal = envVar "TERMINAL" "alacritty"
 
 -- Launcher
 myLauncher :: String
@@ -203,8 +207,6 @@ myConsoleFileManager :: String
 myConsoleFileManager = myTerminal ++ " -e vifm"
 
 
--- configu = desktop $ envVar "DESKTOP_SESSION" "xmonad"
-
 -- myLayout
 myPPLayout :: String -> String
 myPPLayout x = case x of
@@ -230,68 +232,99 @@ myWorkspaces = map show [1..16 :: Int]
 mySpacing :: Integer -> l a -> ModifiedLayout Spacing l a
 mySpacing i = spacingRaw False (Border 0 i 0 i) True (Border i 0 i 0) True
 
--- Layouts
---
--- You can specify and transform your layouts by modifying these values.
--- If you change layout bindings be sure to use 'mod-shift-space' after
--- restarting (with 'M-S-r') to reset your layout state to the new
--- defaults, as xmonad preserves your old layout settings by default.
---
--- The available layouts.  Note that each layout is separated by |||,
--- which denotes layout choice.
---
-myLayout =
-    ManageDocks.avoidStruts
-        $ smartBorders
-  -- Toggles
-        $   mkToggle1 NBFULL
-        $   mkToggle1 REFLECTX
-        $   mkToggle1 REFLECTY
-        $   mkToggle1 MIRROR
-        $   Nav.configurableNavigation (Nav.navigateColor myNormalBorderColor)
-        $
-  -- Layouts
-            name "Tall"       myTile
-        ||| name "OneBig"     myOneBig
-        ||| name "Tabbed"     myTabbed
-        ||| name "HintedGrid" myHintedGrid
-        ||| name "ThreeCol"   my3cmi
-        ||| name "Circle"     Circle
-        ||| name "Mosaic"     myMosaic
-        ||| name "Spiral"     mySpiral
-  where
-    name n = renamed [Replace n] . mySpacing 8
-    myTile       = RTile.ResizableTall 1 (3 / 100) (4 / 7) []
-    my3cmi       = magnifiercz' 1.4 $ ThreeColMid 1 (3 / 100) (1 / 2)
-    mySpiral     = spiral (6 / 7)
-    myMosaic     = mosaic 2 [3, 2]
-    myHintedGrid = GridRatio (4 / 3) False
-    myOneBig     = OneBig (4 / 6) (4 / 6)
-    myTabbed     = noBorders ( TB.tabbed shrinkText myTabConfig)
+-------------------------------------------------------------------------
+-- Easymotion configuration
+-------------------------------------------------------------------------
+emConfig :: EasyMotionConfig
+emConfig =
+  def
+    { txtCol = TH.brightYellow
+    , bgCol = TH.background
+    , borderCol = myFocusedBorderColor
+    , overlayF = textSize
+    , cancelKey = xK_Escape
+    , emFont = TH.myFont
+    , borderPx = 1
+    }
 
 
 
-mySB :: StatusBarConfig
-mySB = statusBarProp "xmobar"
+-------------------------------------------------------------------------
+-- Polybar
+-------------------------------------------------------------------------
+-- Requires https://github.com/xintron/xmonad-log
+-- Enable module xmonad (replaces ewmh xwindow)
+-- Formatting https://github.com/polybar/polybar/wiki/Formatting
+myPolybarLogHook :: D.Client -> X ()
+myPolybarLogHook dbus = dynamicLogWithPP $ filterOutWsPP [scratchpadWorkspaceTag] def {
+  ppOutput           = dbusOutput dbus
+  , ppSep             = " "
+  , ppCurrent         = background . fgColor TH.brightGreen . currentWorkspace
+  , ppVisible         = background . fgColor TH.darkWhite . occupiedWorkspace
+  , ppHidden          = background . fgColor TH.darkBlue . occupiedWorkspace
+  , ppHiddenNoWindows = background . fgColor TH.darkGray . emptyWorkspace
+  , ppUrgent          = background . fgColor TH.darkRed . urgentWorkspace
+  , ppLayout          = wrap "%{A1:xdotool key super+space &:}" "%{A}" . myPPLayout
+  , ppWsSep           = ""
+  , ppTitle           = background . fgColor TH.brightWhite . shorten 60
+  , ppSort            =  getSortByIndex
+  , ppOrder           = \[ws, l, t, ex] -> [ws, l, ex, t]
+  , ppExtras           = [wrapL "%{A1:rofi -show window -dpi 150 &:}\62162 " "%{A}" windowCount]
+}
+    where
+      -- Emit a DBus signal on log updates
+      dbusOutput :: D.Client -> String -> IO ()
+      dbusOutput dbus str = do
+          let signal = (D.signal objectPath interfaceName memberName) {
+                  D.signalBody = [D.toVariant str]
+              }
+          D.emit dbus signal
+        where
+          objectPath = D.objectPath_ "/org/xmonad/Log"
+          interfaceName = D.interfaceName_ "org.xmonad.Log"
+          memberName = D.memberName_ "Update"
+
+      shorten :: Int -> String -> String
+      shorten = shorten' "…"
+
+      wrapSep :: String -> String
+      wrapSep = wrap (bgColor TH.darkBlack "\xe0b4")
+                      (bgColor TH.darkBlack "\xe0b6")
+
+      background :: String -> String
+      background  = bgColor "#1e2127"
+      -- background s = bgColor TH.darkBlack s
+
+      -- fontWrap font = wrap ("%{B" ++ font ++ "} ") " %{B-}"
+
+      bgColor color = wrap ("%{B" ++ color ++ "} ") " %{B-}"
+      fgColor color = wrap ("%{F" ++ color ++ "} ") " %{F-}"
+      -- bgColor color =  ""
+
+
+
+-------------------------------------------------------------------------
+-- Xmobar
+-------------------------------------------------------------------------
+myXmobarSB :: StatusBarConfig
+myXmobarSB = statusBarProp "xmobar"
      $ pure $ filterOutWsPP [scratchpadWorkspaceTag] myXmobarPP
  where
   myXmobarPP :: PP
   myXmobarPP = def
     { ppSep             = wrapSep " "
     , ppTitleSanitize   = xmobarStrip
-    -- , ppCurrent         = green  . xmobarBorder "Bottom" TH.darkGreen  2 . currentWorkspace
-    -- , ppVisible         = lowWhite .xmobarBorder "Bottom" TH.darkGray 2 . occupiedWorkspace
-    , ppCurrent         = green . currentWorkspace
-    , ppVisible         = lowWhite . occupiedWorkspace
-    , ppHidden          = blue . occupiedWorkspace
-    , ppHiddenNoWindows = gray . emptyWorkspace
-    , ppUrgent          = red . urgentWorkspace
+    , ppCurrent         = xmobarColor TH.darkGreen  background . currentWorkspace
+    , ppVisible         = xmobarColor TH.darkWhite  background . occupiedWorkspace
+    , ppHidden          = xmobarColor TH.darkBlue  background . occupiedWorkspace
+    , ppHiddenNoWindows = xmobarColor TH.darkGray background . emptyWorkspace
+    , ppUrgent          = xmobarColor TH.darkRed  background . urgentWorkspace
     , ppWsSep           = xmobarColor "" background "  "
-    , ppTitle           = brightBlue. xmobarAction "xdotool key Super+shift+c" "4" . shorten 40
+    , ppTitle           = xmobarColor TH.brightBlue background. xmobarAction "xdotool key Super+shift+c" "4" . shorten 60
     , ppSort            =  getSortByIndex
     , ppOrder           = \[ws, l, t, ex] -> [ws, l, ex, t]
     , ppExtras          = [xmobarColorL TH.darkWhite background windowCount]
-    , ppLayout          = blue . xmobarAction "xdotool key Super+/" "1" . xmobarAction
+    , ppLayout          = xmobarColor TH.darkBlue  background . xmobarAction "xdotool key Super+/" "1" . xmobarAction
                             "xdotool key Super+shift+/"
                             "3" . myPPLayout
     }
@@ -303,45 +336,38 @@ mySB = statusBarProp "xmobar"
     wrapSep = wrap (xmobarColor TH.darkBlack ""  "\xe0b4")
                    (xmobarColor TH.darkBlack ""  "\xe0b6")
 
-    currentWorkspace :: String -> String
-    currentWorkspace _ = "\61713" -- " "
-
-    occupiedWorkspace :: String -> String
-    occupiedWorkspace _ = "\61842" -- " "
-
-    emptyWorkspace :: String -> String
-    emptyWorkspace _ = "\61708" -- 
-
-    urgentWorkspace :: String -> String
-    urgentWorkspace _ = "\62759" -- 
-
     background :: String
     background = TH.darkBlack  ++ ":5"
 
-    magenta  = xmobarColor TH.darkMagenta  background
-    brightBlue  = xmobarColor TH.brightBlue background
-    blue     = xmobarColor TH.darkBlue  background
-    red      = xmobarColor TH.darkRed  background
-    lowWhite = xmobarColor TH.darkWhite  background
-    gray     = xmobarColor TH.darkGray background
-    green    = xmobarColor TH.darkGreen  background
 
-    -- Get count of available windows on a workspace
-    windowCount :: X (Maybe String)
-    windowCount =
-      gets
-        $ Just
-        . show
-        . length
-        . W.integrate'
-        . W.stack
-        . W.workspace
-        . W.current
-        . windowset
-------------------------------------------------------------------------
+currentWorkspace :: String -> String
+currentWorkspace _ = "\61713" -- " "
+
+occupiedWorkspace :: String -> String
+occupiedWorkspace _ = "\61842" -- " "
+
+emptyWorkspace :: String -> String
+emptyWorkspace _ = "\61708" -- 
+
+urgentWorkspace :: String -> String
+urgentWorkspace _ = "\62759" -- 
+
+-- Get count of available windows on a workspace
+windowCount :: X (Maybe String)
+windowCount =
+  gets
+    $ Just
+    . show
+    . length
+    . W.integrate'
+    . W.stack
+    . W.workspace
+    . W.current
+    . windowset
+
+-------------------------------------------------------------------------
 -- Prompt
---
--- Prompt configuration
+-------------------------------------------------------------------------
 myPrompt :: Prompt.XPConfig
 myPrompt = def
     { Prompt.font = TH.myFont
@@ -402,6 +428,50 @@ mySessionPrompt =
         noConfirm command = spawn ("$HOME/.scripts/i3lock.sh " ++ command)
 
 
+-------------------------------------------------------------------------
+-- Layouts
+-------------------------------------------------------------------------
+-- You can specify and transform your layouts by modifying these values.
+-- If you change layout bindings be sure to use 'mod-shift-space' after
+-- restarting (with 'M-S-r') to reset your layout state to the new
+-- defaults, as xmonad preserves your old layout settings by default.
+--
+-- The available layouts.  Note that each layout is separated by |||,
+-- which denotes layout choice.
+--
+myLayout =
+    ManageDocks.avoidStruts
+        $ smartBorders
+  -- Toggles
+        $   mkToggle1 NBFULL
+        $   mkToggle1 REFLECTX
+        $   mkToggle1 REFLECTY
+        $   mkToggle1 MIRROR
+        $   Nav.configurableNavigation (Nav.navigateColor myNormalBorderColor)
+        $
+  -- Layouts
+            name "Tall"       myTile
+        ||| name "OneBig"     myOneBig
+        ||| name "Tabbed"     myTabbed
+        ||| name "HintedGrid" myHintedGrid
+        ||| name "ThreeCol"   my3cmi
+        ||| name "Circle"     Circle
+        ||| name "Mosaic"     myMosaic
+        ||| name "Spiral"     mySpiral
+  where
+    name n = renamed [Replace n] . mySpacing 8
+    myTile       = RTile.ResizableTall 1 (3 / 100) (4 / 7) []
+    my3cmi       = magnifiercz' 1.4 $ ThreeColMid 1 (3 / 100) (1 / 2)
+    mySpiral     = spiral (6 / 7)
+    myMosaic     = mosaic 2 [3, 2]
+    myHintedGrid = GridRatio (4 / 3) False
+    myOneBig     = OneBig (4 / 6) (4 / 6)
+    myTabbed     = noBorders ( TB.tabbed shrinkText myTabConfig)
+
+
+-------------------------------------------------------------------------
+-- Manage hook
+-------------------------------------------------------------------------
 myManageHook :: ManageHook
 myManageHook = composeAll
     [
@@ -482,15 +552,14 @@ myManageHook' =
       , "splash"
       , "toolbar"
       , "Peek"
+      , "yakuake"
       ]
     myRoleCenterFloats = ["GtkFileChooserDialog"]
     myTitleFloats = ["Media viewer", "Yad"]
     myFullFloats  = []
       -- workspace numbers start at 0
     myShifts =
-      [ ("telegram-desktop"  , 10)
-      , ("TelegramDesktop"   , 10)
-      , ("Slack"             , 9)
+      [ ("Slack"             , 9)
       , ("Postman"           , 6)
       , ("DevCenter"         , 6)
       , ("jetbrains-idea-ce" , 2)
@@ -506,11 +575,16 @@ myManageHook' =
         "Yad"
       ]
 
+-------------------------------------------------------------------------
+-- Scratchpads
+-------------------------------------------------------------------------
 myScratchPads :: [NamedScratchpad]
 myScratchPads = [ NS "terminal" spawnTerm findTerm manageTerm ]
   where
-    spawnTerm  = myTerminal ++ " -t scratchpad"
-    findTerm   = title =? "scratchpad"
+    -- spawnTerm  = "cool-retro-term -T scratchpad"
+    -- findTerm   = title =? "scratchpad"
+    spawnTerm  = "cool-retro-term"
+    findTerm   = className =? "cool-retro-term"
     manageTerm = customFloating $ W.RationalRect l t w h
                where
                  h = 0.9
@@ -532,13 +606,10 @@ myStartupHook = do
       -- ++ "' --tint-level 255 --grow-gravity NE --icon-gravity NW --icon-size 20 --sticky --window-type dock --window-strut top --skip-taskbar"
       -- )
 
-myHandleEventHook :: Event -> X All
-myHandleEventHook =
-    ManageDocks.docksEventHook <+> handleEventHook def
 
-------------------------------------------------------------------------
+-------------------------------------------------------------------------
 -- tabs
---
+-------------------------------------------------------------------------
 myTabConfig :: TB.Theme
 myTabConfig = def { TB.activeColor         = myFocusedBorderColor -- "#556064"
                   , TB.inactiveColor       = myNormalBorderColor -- "#2F3D44"
@@ -551,7 +622,7 @@ myTabConfig = def { TB.activeColor         = myFocusedBorderColor -- "#556064"
                   -- , TB.urgentTextColor     =  -- "#1ABC9C"
                   , TB.fontName = TH.myFont -- "xft:Noto Sans CJK:size=10:antialias=true"
                   }
--- ------------------------------------------------------------------------
+-- ----------------------------------------------------------------------
 
 myNormalBorderColor :: String
 myNormalBorderColor = TH.background
@@ -565,7 +636,7 @@ myBorderWidth = 3
 
 -------------------------------------------------------------------------
 -- Keybinding hints
--------------------------
+-------------------------------------------------------------------------
 -- Order displayed
 -- Label used for displaying keys
 data Label =
@@ -687,7 +758,7 @@ showHelp = spawn $ unwords
 
 ------------------------------------------------------------------------
 -- Mouse bindings
---
+------------------------------------------------------------------------
 -- Focus rules
 -- True if your focus should follow your mouse cursor.
 myFocusFollowsMouse :: Bool
@@ -716,7 +787,7 @@ myMouseBindings XConfig { XMonad.modMask = modMask } = M.fromList
 
 ------------------------------------------------------------------------
 -- Key bindings
---
+------------------------------------------------------------------------
 -- modMask lets you specify which modkey you want to use. The default
 -- is mod1Mask ("left alt").  You may also consider using mod3Mask
 -- ("right alt"), which does not conflict with emacs keybindings. The
@@ -781,6 +852,9 @@ myWindowMovementKeys =
     , ("M-k"  , windowGo Nav.U, ClientLabel, "Focus up")
     , ("M-h"  , windowGo Nav.L, ClientLabel, "Focus left")
     , ("M-l"  , windowGo Nav.R, ClientLabel, "Focus right")
+    , ("M-s", selectWindow emConfig >>= (`whenJust` windows . W.focusWindow),
+      ClientLabel, "Easymotion"
+    )
     , ( "M-S-m"
       , windows W.focusMaster, ClientLabel
       , "Focus master"
@@ -789,6 +863,7 @@ myWindowMovementKeys =
       , cycleRecentWindows [xK_Alt_L] xK_Tab xK_Tab, ClientLabel
       , "Cycle recent windows"
       )
+
     ]
     where windowGo = sendMessage . Nav.Go
 myWorkspaceMovementKeys' :: [KeyMapHint]
@@ -851,7 +926,7 @@ myLayoutSwapKeys =
 
 myLayoutKeys' :: [KeyMapHint]
 myLayoutKeys' =
-    [ ( "M-f"
+    [ ( "M-a"
       , sendMessage $ Toggle NBFULL
       , ClientLabel
       , "Toggle full screen"
@@ -919,12 +994,12 @@ myWorkspaceKeys =
 
 myFloatKeys :: [KeyMapHint]
 myFloatKeys =
-    [ ("M-a s", withFocused $ windows . W.sink, ClientLabel, "Sink floating")
-    , ("M-a b", withFocused $ windows . flip W.float bigCenterR, ClientLabel, "Float big center")
-    , ("M-a c", withFocused $ windows . flip W.float centerR, ClientLabel, "Float center")
-    , ("M-a l", withFocused $ windows . flip W.float leftR, ClientLabel, "Float left")
-    , ("M-a r", withFocused $ windows . flip W.float rightR, ClientLabel, "Float right")
-    , ("M-a a", sinkAll , ClientLabel, "Sink all floating")
+    [ ("M-w s", withFocused $ windows . W.sink, ClientLabel, "Sink floating")
+    , ("M-w b", withFocused $ windows . flip W.float bigCenterR, ClientLabel, "Float big center")
+    , ("M-w c", withFocused $ windows . flip W.float centerR, ClientLabel, "Float center")
+    , ("M-w l", withFocused $ windows . flip W.float leftR, ClientLabel, "Float left")
+    , ("M-w r", withFocused $ windows . flip W.float rightR, ClientLabel, "Float right")
+    , ("M-w a", sinkAll , ClientLabel, "Sink all floating")
     ]
     where
       centerR = W.RationalRect (1 / 4) (1 / 4) (1 / 2) (1 / 2)
