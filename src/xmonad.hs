@@ -259,17 +259,17 @@ myPolybarLogHook :: D.Client -> X ()
 myPolybarLogHook dbus = dynamicLogWithPP $ filterOutWsPP [scratchpadWorkspaceTag] def {
   ppOutput           = dbusOutput dbus
   , ppSep             = " "
-  , ppCurrent         = background . fgColor TH.brightGreen . currentWorkspace
-  , ppVisible         = background . fgColor TH.darkWhite . occupiedWorkspace
-  , ppHidden          = background . fgColor TH.darkBlue . occupiedWorkspace
-  , ppHiddenNoWindows = background . fgColor TH.darkGray . emptyWorkspace
-  , ppUrgent          = background . fgColor TH.darkRed . urgentWorkspace
-  , ppLayout          = wrap "%{A1:xdotool key super+space &:}" "%{A}" . myPPLayout
+  , ppCurrent         = underLine TH.brightGreen  . fgColor TH.brightGreen . currentWorkspace
+  , ppVisible         = underLine TH.brightBlue . fgColor TH.brightBlue . occupiedWorkspace
+  , ppHidden          = fgColor TH.darkWhite . occupiedWorkspace
+  , ppHiddenNoWindows = fgColor TH.darkGray . emptyWorkspace
+  , ppUrgent          = fgColor TH.darkRed . urgentWorkspace
+  , ppLayout          = wrap "%{A1:xdotool key super+\\ &:}%{T5}" "%{T-}%{A}" . myPPLayout
   , ppWsSep           = ""
-  , ppTitle           = background . fgColor TH.brightWhite . shorten 60
+  , ppTitle           =  shorten 60
   , ppSort            =  getSortByIndex
   , ppOrder           = \[ws, l, t, ex] -> [ws, l, ex, t]
-  , ppExtras           = [wrapL "%{A1:rofi -show window -dpi 150 &:}\62162 " "%{A}" windowCount]
+  , ppExtras           = [wrapL "%{A1:rofi -show window -dpi 150 &:}%{T4}\62162%{T-} " "%{A}" windowCount]
 }
     where
       -- Emit a DBus signal on log updates
@@ -291,14 +291,12 @@ myPolybarLogHook dbus = dynamicLogWithPP $ filterOutWsPP [scratchpadWorkspaceTag
       wrapSep = wrap (bgColor TH.darkBlack "\xe0b4")
                       (bgColor TH.darkBlack "\xe0b6")
 
-      background :: String -> String
-      background  = bgColor "#1e2127"
-      -- background s = bgColor TH.darkBlack s
-
       -- fontWrap font = wrap ("%{B" ++ font ++ "} ") " %{B-}"
 
       bgColor color = wrap ("%{B" ++ color ++ "} ") " %{B-}"
       fgColor color = wrap ("%{F" ++ color ++ "} ") " %{F-}"
+      overLine color = wrap ("%{o" ++ color ++ "}%{+o} ") " %{-o}"
+      underLine color = wrap ("%{u" ++ color ++ "}%{+u} ") " %{-u}"
       -- bgColor color =  ""
 
 
