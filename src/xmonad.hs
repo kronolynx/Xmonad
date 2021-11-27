@@ -124,7 +124,6 @@ main = do
           , manageHook         = myManageHook <+> manageHook desktopConfig
           , layoutHook         = myLayout
           , startupHook        = myStartupHook <+> checkKeymap myDesktopConfig myKeymap
-          , handleEventHook    = handleEventHook desktopConfig
           --  , logHook = refocusLastLogHook
           --           >> nsHideOnFocusLoss myScratchPads
         }
@@ -138,7 +137,7 @@ main = do
 
         let urgencyConfig = UrgencyConfig UH.Focused UH.Dont
         let urgencyStyle = UH.BorderUrgencyHook TH.brightMagenta
-        xmonad . Hacks.javaHack . ManageDocks.docks . setEwmhActivateHook UH.doAskUrgent . ewmhFullscreen . ewmh  $ UH.withUrgencyHookC urgencyStyle urgencyConfig myDesktopConfig {
+        xmonad . Hacks.javaHack .  setEwmhActivateHook UH.doAskUrgent . ManageDocks.docks . ewmhFullscreen . ewmh  $ UH.withUrgencyHookC urgencyStyle urgencyConfig myDesktopConfig {
           startupHook = myStartupHook <+> do
             checkKeymap myDesktopConfig myKeymap
             spawnOnce "polybar bar-xmonad"
@@ -188,11 +187,6 @@ myWindowSelector = "rofi -show window -show-icons"
 
 myClipboard :: String
 myClipboard = "rofi -modi 'clipboard:greenclip print' -show clipboard -run-command '{cmd}'"
-
--- -- Editor
--- myTextEditor :: String
--- -- myTextEditor = "emacsclient -c -a emacs"
--- myTextEditor = "nvim"
 
 -- Browser
 myBrowser :: String
@@ -524,10 +518,7 @@ myManageHook' =
           ]
   where
     role = stringProperty "WM_WINDOW_ROLE"
-    myIgnores = [
-      --   "Plasma-desktop"
-      -- , "plasmashell"
-      ]
+    myIgnores = [ ]
     myCenterFloats = ["zenity"
       ,"Arandr"
       , "Galculator"
@@ -596,14 +587,6 @@ myStartupHook :: X ()
 myStartupHook = do
     spawnOnce "$HOME/.config/xmonad/scripts/autostart.sh"
 
-    -- Cursor.setDefaultCursor Cursor.xC_left_ptr
-    -- spawnOnce "$HOME/.config/xmonad/scripts/autostart.sh"
-    -- spawnOnce "stalonetray"
-      -- ("stalonetray --geometry 1x1-17+5 --max-geometry 10x1-17+5 --transparent --tint-color '"
-      -- ++ TH.darkBlack
-      -- ++ "' --tint-level 255 --grow-gravity NE --icon-gravity NW --icon-size 20 --sticky --window-type dock --window-strut top --skip-taskbar"
-      -- )
-
 
 -------------------------------------------------------------------------
 -- tabs
@@ -615,9 +598,6 @@ myTabConfig = def { TB.activeColor         = myFocusedBorderColor -- "#556064"
                   , TB.activeBorderColor   = myFocusedBorderColor -- "#454948"
                   , TB.inactiveBorderColor = myNormalBorderColor -- "#454948"
                   , TB.urgentBorderColor   = TH.brightMagenta  -- "#268BD2"
-                  -- , TB.activeTextColor     =  -- "#80FFF9"
-                  -- , TB.inactiveTextColor   =  -- "#1ABC9C"
-                  -- , TB.urgentTextColor     =  -- "#1ABC9C"
                   , TB.fontName = TH.myFont -- "xft:Noto Sans CJK:size=10:antialias=true"
                   }
 -- ----------------------------------------------------------------------
