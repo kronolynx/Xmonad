@@ -263,7 +263,7 @@ myPolybarLogHook dbus = dynamicLogWithPP $ filterOutWsPP [scratchpadWorkspaceTag
   , ppTitle           =  shorten 60
   , ppSort            =  getSortByIndex
   , ppOrder           = \[ws, l, t, ex] -> [ws, l, ex, t]
-  , ppExtras           = [wrapL "%{A1:rofi -show window -dpi 150 &:}%{T4}\62162%{T-} " "%{A}" windowCount]
+  , ppExtras           = [wrapL "%{A1:rofi -show window -dpi 150 &:} " " %{A}" windowCount]
 }
     where
       -- Emit a DBus signal on log updates
