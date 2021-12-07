@@ -605,10 +605,10 @@ myTabConfig = def { TB.activeColor         = myFocusedBorderColor -- "#556064"
 myNormalBorderColor :: String
 myNormalBorderColor = TH.background
 myFocusedBorderColor :: String
-myFocusedBorderColor = TH.darkCyan
+myFocusedBorderColor = TH.brightGreen
 -- border width
 myBorderWidth :: Dimension
-myBorderWidth = 3
+myBorderWidth = 1
 
 
 
