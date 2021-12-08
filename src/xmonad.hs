@@ -258,9 +258,9 @@ myPolybarLogHook dbus = dynamicLogWithPP $ filterOutWsPP [scratchpadWorkspaceTag
   , ppHidden          = fgColor TH.darkWhite . occupiedWorkspace
   , ppHiddenNoWindows = fgColor TH.darkGray . emptyWorkspace
   , ppUrgent          = fgColor TH.darkRed . urgentWorkspace
-  , ppLayout          = wrap "%{A1:xdotool key super+\\ &:}%{T5}" "%{T-}%{A}" . myPPLayout
+  , ppLayout          = wrap "%{A1:xdotool key super+\\ &:}%{T4}" "%{T-}%{A}" . myPPLayout
   , ppWsSep           = ""
-  , ppTitle           =  shorten 60
+  , ppTitle           =  const ""
   , ppSort            =  getSortByIndex
   , ppOrder           = \[ws, l, t, ex] -> [ws, l, ex, t]
   , ppExtras           = [wrapL "%{A1:rofi -show window -dpi 150 &:} " " %{A}" windowCount]
@@ -608,7 +608,7 @@ myFocusedBorderColor :: String
 myFocusedBorderColor = TH.brightGreen
 -- border width
 myBorderWidth :: Dimension
-myBorderWidth = 1
+myBorderWidth = 3
 
 
 
