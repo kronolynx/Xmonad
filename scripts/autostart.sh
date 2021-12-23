@@ -26,7 +26,7 @@ if [ "$DESKTOP_SESSION" == "xmonad" ]; then
     run volumeicon;
 fi
 run greenclip daemon;
-run picom -C -b;
+run picom;
 
 # set x cursor
 # https://wiki.haskell.org/Xmonad/Frequently_asked_questions#Setting_the_X_cursor
@@ -38,6 +38,8 @@ if [ -f ~/.scripts/autostart_work.sh ]; then
 fi
 
 keyboard # set keyboard
+
+xbacklight = 2
 
 run xautolock -time 10 -locker lock -notify 30 -notifier "notify-send 'Locker' 'Locking screen in 30 seconds'";
 
