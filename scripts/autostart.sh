@@ -20,13 +20,14 @@ if [ "$DESKTOP_SESSION" == "xmonad" ]; then
     fi
     run polkit-gnome-authentication-agent-1
     run /usr/lib/xfce4/notifyd/xfce4-notifyd;
-    run nitrogen --restore
     run thunar --daemon;
     run nm-applet;
-    run volumeicon;
+    run pasystray;
 fi
 run greenclip daemon;
 run picom;
+
+feh --bg-fill ~/.wallpapers/amongTress.jpg
 
 # set x cursor
 # https://wiki.haskell.org/Xmonad/Frequently_asked_questions#Setting_the_X_cursor
@@ -39,7 +40,7 @@ fi
 
 keyboard # set keyboard
 
-xbacklight = 2
+xbacklight = 20
 
 run xautolock -time 10 -locker lock -notify 30 -notifier "notify-send 'Locker' 'Locking screen in 30 seconds'";
 

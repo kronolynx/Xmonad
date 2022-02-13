@@ -194,7 +194,7 @@ myBrowser = envVar "BROWSER" "firefox"
 
 -- File Manager
 myFileManager :: String
-myFileManager = envVar "FILE_MANAGER" "dolphin"
+myFileManager = envVar "FILE_MANAGER" "thunar"
 
 -- Console File Manager
 myConsoleFileManager :: String
@@ -542,6 +542,7 @@ myManageHook' =
       , "toolbar"
       , "Peek"
       , "yakuake"
+      , "gpclient"
       ]
     myRoleCenterFloats = ["GtkFileChooserDialog"]
     myTitleFloats = ["Media viewer", "Yad"]
@@ -570,10 +571,10 @@ myManageHook' =
 myScratchPads :: [NamedScratchpad]
 myScratchPads = [ NS "terminal" spawnTerm findTerm manageTerm ]
   where
-    -- spawnTerm  = "cool-retro-term -T scratchpad"
-    -- findTerm   = title =? "scratchpad"
-    spawnTerm  = "cool-retro-term"
-    findTerm   = className =? "cool-retro-term"
+    spawnTerm  = "alacritty -t scratchpad"
+    findTerm   = title =? "scratchpad"
+    -- spawnTerm  = "cool-retro-term"
+    -- findTerm   = className =? "cool-retro-term"
     manageTerm = customFloating $ W.RationalRect l t w h
                where
                  h = 0.9
