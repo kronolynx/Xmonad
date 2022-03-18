@@ -176,7 +176,7 @@ myScreenCapture :: String
 myScreenCapture = "$HOME/.scripts/screen_shot.sh"
 
 myTerminal :: String
-myTerminal = envVar "TERMINAL" "alacritty"
+myTerminal = envVar "TERMINAL" "terminator"
 
 -- Launcher
 myLauncher :: String
@@ -552,7 +552,7 @@ myManageHook' =
       [ ("Slack"             , 9)
       , ("Postman"           , 6)
       , ("DevCenter"         , 6)
-      , ("jetbrains-idea-ce" , 2)
+      , ("jetbrains-idea-ce" , 1)
       , ("Chromium"          , 13)
       , ("Joplin"            , 6)
       , ("Transmission-gtk"  , 11)
@@ -571,7 +571,7 @@ myManageHook' =
 myScratchPads :: [NamedScratchpad]
 myScratchPads = [ NS "terminal" spawnTerm findTerm manageTerm ]
   where
-    spawnTerm  = "alacritty -t scratchpad"
+    spawnTerm  = "terminator -T scratchpad"
     findTerm   = title =? "scratchpad"
     -- spawnTerm  = "cool-retro-term"
     -- findTerm   = className =? "cool-retro-term"
@@ -733,7 +733,6 @@ showHelp = spawn $ unwords
       -- if I try to separate with a color then the string is not centered because of the length of the string
       myTagKeys = unwords ["1..9","0", "-", "=", "[", "]", ";" ,"'"]
       -- separator = colStr TH.darkBlack ++ "/" ++ colStr TH.brightBlue
-
 
 ------------------------------------------------------------------------
 -- Mouse bindings
@@ -968,7 +967,7 @@ myWorkspaceKeys =
       , TagLabel
       , "Shift to previous workspace"
       ) -- Shift the focused window to the previous workspace
-    , ("M-<Tab>", CycleWS.toggleWS, TagLabel, "Toggle last workspace") -- toggle last workspace
+    , ("M-<Tab>", CycleWS.toggleWS' ["NSP"], TagLabel, "Toggle last workspace") -- toggle last workspace
     ]
 
 myFloatKeys :: [KeyMapHint]
@@ -1163,6 +1162,6 @@ myControlKeys =
       , ClientLabel
       , "Clear urgent"
       ) -- clear urgents
-    , ("M-t", namedScratchpadAction myScratchPads "terminal", MiscLabel, "Scratchpad")
+    , ("M-q", namedScratchpadAction myScratchPads "terminal", MiscLabel, "Scratchpad")
     , ("M-<F1>", unGrab >> showHelp, MiscLabel, "Show help")
     ]
