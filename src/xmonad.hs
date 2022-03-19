@@ -464,6 +464,7 @@ myLayout =
 -------------------------------------------------------------------------
 -- Manage hook
 -------------------------------------------------------------------------
+      --
 myManageHook :: ManageHook
 myManageHook = composeAll
     [
@@ -481,12 +482,6 @@ checkModal = isInProperty "_NET_WM_STATE" "_NET_WM_STATE_MODAL"
 checkSkipTaskbar :: Query Bool
 checkSkipTaskbar = isInProperty "_NET_WM_STATE" "_NET_WM_STATE_SKIP_TASKBAR"
 
-willFloat :: Query Bool
-willFloat = ask >>= \w -> liftX $ withDisplay $ \d -> do
-  sh <- io $ getWMNormalHints d w
-  let isFixedSize = isJust (sh_min_size sh) && sh_min_size sh == sh_max_size sh
-  isTransient <- isJust <$> io (getTransientForHint d w)
-  return (isFixedSize || isTransient)
 --
 -- https://wiki.haskell.org/Xmonad/Frequently_asked_questions
 -- xprop fields used in manage hook:
