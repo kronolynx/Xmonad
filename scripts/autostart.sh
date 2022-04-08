@@ -22,12 +22,13 @@ if [ "$DESKTOP_SESSION" == "xmonad" ]; then
     run /usr/lib/xfce4/notifyd/xfce4-notifyd;
     run thunar --daemon;
     run nm-applet;
-    run pasystray;
+    #run pasystray;
+    run volumeicon
 fi
 run greenclip daemon;
-run picom;
+run picom --experimental-backends;
 
-feh --bg-fill ~/.wallpapers/amongTress.jpg
+feh --bg-fill ~/.wallpapers/river.jpg
 
 # set x cursor
 # https://wiki.haskell.org/Xmonad/Frequently_asked_questions#Setting_the_X_cursor
