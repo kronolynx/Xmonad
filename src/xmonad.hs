@@ -30,7 +30,6 @@ import           XMonad.Hooks.StatusBar.PP           (PP (..),
                                                       xmobarColor, xmobarStrip, xmobarAction, filterOutWsPP)
 
 -- layouts
-import           XMonad.Layout.Circle                ( Circle(..) )
 import           XMonad.Layout.HintedGrid            ( Grid(GridRatio) )
 import           XMonad.Layout.LayoutCombinators     ( (|||))
 import           XMonad.Layout.Mosaic                ( mosaic )
@@ -214,7 +213,6 @@ myPPLayout x = case x of
     "Mirror Mosaic"   -> "\xfa73" -- 侀
     "Tabbed"          -> "\xfd35" -- ﴵ
     "Mirror Spiral"   -> "\xfc06" -- ﰆ
-    "Circle"          -> "\xe22e" -- 
     "OneBig"          -> "\xf286" -- 
     "HintedGrid"      -> "\xfb8a" -- ﮊ
     _                 -> x
@@ -389,10 +387,9 @@ myLayoutPrompt =
                 [ "1.Tall"
                 , "2.HintedGrid"
                 , "3.OneBig"
-                , "4.Circle"
-                , "5.Mosaic"
-                , "6.ThreeCol"
-                , "7.Spiral"
+                , "4.Mosaic"
+                , "5.ThreeCol"
+                , "6.Spiral"
                 ]
             )
         ?+ \l -> sendMessage $ JumpToLayout $ drop 2 l
@@ -443,17 +440,17 @@ myLayout =
         $
   -- Layouts
             name "Tall"       myTile
-        ||| name "OneBig"     myOneBig
-        ||| name "Tabbed"     myTabbed
         ||| name "HintedGrid" myHintedGrid
+        ||| name "OneBig"     myOneBig
         ||| name "ThreeCol"   my3cmi
-        ||| name "Circle"     Circle
         ||| name "Mosaic"     myMosaic
         ||| name "Spiral"     mySpiral
+        ||| name "Tabbed"     myTabbed
   where
     name n = renamed [Replace n] . mySpacing 8
     myTile       = RTile.ResizableTall 1 (3 / 100) (4 / 7) []
-    my3cmi       = magnifiercz' 1.4 $ ThreeColMid 1 (3 / 100) (1 / 2)
+    -- my3cmi       = magnifiercz' 1.1 $ ThreeColMid 1 (3 / 100) (1 / 2)
+    my3cmi       = ThreeColMid 1 (3 / 100) (1 / 2)
     mySpiral     = spiral (6 / 7)
     myMosaic     = mosaic 2 [3, 2]
     myHintedGrid = GridRatio (4 / 3) False
@@ -874,10 +871,9 @@ myGotoLayoutKeys =
     , ("M-g 2", jumpToLayout "HintedGrid", LayoutLabel, "HintedGrid")
     , ("M-g 3", jumpToLayout "Tabbed"    , LayoutLabel, "Tabbed")
     , ("M-g 4", jumpToLayout "OneBig"    , LayoutLabel, "OneBig")
-    , ("M-g 5", jumpToLayout "Circle"    , LayoutLabel, "Circle")
-    , ("M-g 6", jumpToLayout "Mosaic"    , LayoutLabel, "Mosaic")
-    , ("M-g 7", jumpToLayout "ThreeCol"  , LayoutLabel, "Threecol")
-    , ("M-g 8", jumpToLayout "Spiral"    , LayoutLabel, "spiral")
+    , ("M-g 5", jumpToLayout "Mosaic"    , LayoutLabel, "Mosaic")
+    , ("M-g 6", jumpToLayout "ThreeCol"  , LayoutLabel, "Threecol")
+    , ("M-g 7", jumpToLayout "Spiral"    , LayoutLabel, "spiral")
     ]
     where jumpToLayout = sendMessage . JumpToLayout
 
