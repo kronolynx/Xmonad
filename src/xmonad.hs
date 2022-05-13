@@ -8,6 +8,7 @@ module Main (main) where
 --
 --
 import           XMonad                              hiding ( (|||) )
+import           XMonad.Config.Mate                 (mateConfig)
 
 import qualified Theme.Theme                         as TH
 
@@ -110,7 +111,8 @@ import XMonad.Hooks.DynamicLog (dynamicLogWithPP)
 main :: IO ()
 main = do
     session <- lookupEnv "DESKTOP_SESSION"
-    let myDesktopConfig = desktopConfig {
+    let defDesktopConfig = maybe desktopConfig desktop session
+    let myDesktopConfig = defDesktopConfig {
             borderWidth        = myBorderWidth
           , normalBorderColor  = myNormalBorderColor
           , focusedBorderColor = myFocusedBorderColor
@@ -151,8 +153,12 @@ main = do
             checkKeymap myDesktopConfig myKeymap
             spawnOnce "stalonetray"
         }
-      else do xmonad $ ewmhFullscreen $ ewmh  myDesktopConfig
+    else do xmonad $ ewmhFullscreen $ ewmh  myDesktopConfig
 
+
+
+desktop "mate"   = mateConfig
+desktop _        = desktopConfig
 
 -- Read environment variables or use default
 envVar :: String -> String -> String
