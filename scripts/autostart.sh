@@ -30,6 +30,8 @@ if [ "$DESKTOP_SESSION" == "xmonad" ]; then
     feh --bg-fill ~/.wallpapers/river.jpg
 
     run xautolock -time 10 -locker lock -notify 30 -notifier "notify-send 'Locker' 'Locking screen in 30 seconds'";
+elif [ "$DESKTOP_SESSION" == "xfce" ]; then 
+    feh --bg-fill ~/.wallpapers/river.jpg
 fi
 
 # killall xembedsniproxy

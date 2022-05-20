@@ -9,6 +9,7 @@ module Main (main) where
 --
 import           XMonad                              hiding ( (|||) )
 import           XMonad.Config.Mate                 (mateConfig)
+import           XMonad.Config.Xfce                 (xfceConfig)
 
 import qualified Theme.Theme                         as TH
 
@@ -98,8 +99,6 @@ import           System.Exit                         (exitSuccess)
 import           System.Environment                  (lookupEnv)
 import           Data.Maybe                          (fromMaybe, isJust)
 import           System.IO.Unsafe                    (unsafeDupablePerformIO)
-import           XMonad.Hooks.UrgencyHook            (UrgencyConfig(UrgencyConfig))
-import           XMonad.Hooks.ManageHelpers          (isInProperty)
 
 import qualified DBus as D
 import qualified DBus.Client as D
@@ -136,7 +135,7 @@ main = do
         _ <- D.requestName dbus (D.busName_ "org.xmonad.Log")
             [D.nameAllowReplacement, D.nameReplaceExisting, D.nameDoNotQueue]
 
-        let urgencyConfig = UrgencyConfig UH.Focused UH.Dont
+        let urgencyConfig = UH.UrgencyConfig UH.Focused UH.Dont
         let urgencyStyle = UH.BorderUrgencyHook TH.brightMagenta
         xmonad . Hacks.javaHack .  setEwmhActivateHook UH.doAskUrgent . ManageDocks.docks . ewmhFullscreen . ewmh  $ UH.withUrgencyHookC urgencyStyle urgencyConfig myDesktopConfig {
           startupHook = myStartupHook <+> do
@@ -146,18 +145,21 @@ main = do
         }
     else if session == Just "xmonad-xmobar"
       then do
-        let urgencyConfig = UrgencyConfig UH.Focused UH.Dont
+        let urgencyConfig = UH.UrgencyConfig UH.Focused UH.Dont
         let urgencyStyle = UH.BorderUrgencyHook TH.brightMagenta
         xmonad . Hacks.javaHack . withSB myXmobarSB . ewmhFullscreen . ewmh  $ UH.withUrgencyHookC urgencyStyle urgencyConfig myDesktopConfig {
           startupHook = myStartupHook <+> do
             checkKeymap myDesktopConfig myKeymap
             spawnOnce "stalonetray"
         }
-    else do xmonad $ ewmhFullscreen $ ewmh  myDesktopConfig
+    else do xmonad . setEwmhActivateHook UH.doAskUrgent . ManageDocks.docks . ewmhFullscreen $ ewmh  myDesktopConfig 
+
+        
 
 
 
 desktop "mate"   = mateConfig
+desktop "xfce"   = xfceConfig
 desktop _        = desktopConfig
 
 -- Read environment variables or use default
@@ -481,10 +483,10 @@ myManageHook = composeAll
 
 -- | Check if window is modal
 checkModal :: Query Bool
-checkModal = isInProperty "_NET_WM_STATE" "_NET_WM_STATE_MODAL"
+checkModal = ManageHelpers.isInProperty "_NET_WM_STATE" "_NET_WM_STATE_MODAL"
 
 checkSkipTaskbar :: Query Bool
-checkSkipTaskbar = isInProperty "_NET_WM_STATE" "_NET_WM_STATE_SKIP_TASKBAR"
+checkSkipTaskbar = ManageHelpers.isInProperty "_NET_WM_STATE" "_NET_WM_STATE_SKIP_TASKBAR"
 
 --
 -- https://wiki.haskell.org/Xmonad/Frequently_asked_questions
