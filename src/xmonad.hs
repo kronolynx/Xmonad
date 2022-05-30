@@ -152,7 +152,7 @@ main = do
             checkKeymap myDesktopConfig myKeymap
             spawnOnce "stalonetray"
         }
-    else do xmonad . setEwmhActivateHook UH.doAskUrgent . ManageDocks.docks . ewmhFullscreen $ ewmh  myDesktopConfig 
+    else do xmonad . setEwmhActivateHook UH.doAskUrgent . ManageDocks.docks . ewmhFullscreen . ewmh $ UH.withUrgencyHook UH.NoUrgencyHook $ myDesktopConfig 
 
         
 
