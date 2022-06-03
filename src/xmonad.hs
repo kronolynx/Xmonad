@@ -409,7 +409,7 @@ mySessionPrompt =
             "\x23FB " -- ⏻
             (Prompt.mkComplFunFromList'
             myPrompt { Prompt.autoComplete = Just 1000 } -- TODO why do I need to pass this twice ??
-            ["1.Lock", "2.Suspend", "3.ScreenOff", "4.Reboot", "5.Shutdown", "6.Exit"])
+            ["1.Lock", "2.Suspend", "3.ScreenOff", "4.Reboot", "5.Shutdown", "6.Logout"])
         ?+ \l -> prompt $ map toLower $ drop 2 l
   where
     prompt = \x -> case x of
@@ -418,7 +418,7 @@ mySessionPrompt =
         "screenoff" -> noConfirm x
         "reboot"    -> confirm x
         "shutdown"  -> confirm x
-        "exit"      -> confirmPrompt myPrompt x $ io exitSuccess
+        "logout"    -> confirm x
         _ -> noConfirm "lock"
       where
         confirm command = confirmPrompt myPrompt command
