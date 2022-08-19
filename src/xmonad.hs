@@ -555,7 +555,7 @@ myManageHook' =
       , ("DevCenter"         , 6)
       , ("jetbrains-idea-ce" , 1)
       , ("Chromium"          , 13)
-      , ("Joplin"            , 6)
+      -- , ("Joplin"            , 6)
       , ("Transmission-gtk"  , 11)
       ]
     myTitleShifts =
@@ -570,13 +570,16 @@ myManageHook' =
 -- Scratchpads
 -------------------------------------------------------------------------
 myScratchPads :: [NamedScratchpad]
-myScratchPads = [ NS "terminal" spawnTerm findTerm manageTerm ]
+myScratchPads = [
+    NS "terminal" spawnTerm findTerm manageScratch
+  , NS "notes" spawnNotes findNotes manageScratch
+ ]
   where
     spawnTerm  = "terminator -T scratchpad"
     findTerm   = title =? "scratchpad"
-    -- spawnTerm  = "cool-retro-term"
-    -- findTerm   = className =? "cool-retro-term"
-    manageTerm = customFloating $ W.RationalRect l t w h
+    spawnNotes = "joplin-desktop"
+    findNotes  = className =? "Joplin"
+    manageScratch = customFloating $ W.RationalRect l t w h
                where
                  h = 0.9
                  w = 0.9
@@ -1163,5 +1166,6 @@ myControlKeys =
       , "Clear urgent"
       ) -- clear urgents
     , ("M-q", namedScratchpadAction myScratchPads "terminal", MiscLabel, "Scratchpad")
+    , ("M-n", namedScratchpadAction myScratchPads "notes", MiscLabel, "Scratchpad notes")
     , ("M-<F1>", unGrab >> showHelp, MiscLabel, "Show help")
     ]
