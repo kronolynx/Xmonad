@@ -50,7 +50,6 @@ import qualified XMonad.Layout.Tabbed                as TB
 import           XMonad.Layout.ThreeColumns          ( ThreeCol(ThreeColMid) )
 import qualified XMonad.Layout.WindowNavigation      as Nav
 import           XMonad.Layout.LayoutModifier        (ModifiedLayout)
-import           XMonad.Layout.Magnifier             (magnifiercz')
 
 
 -- utils
@@ -95,9 +94,8 @@ import qualified Data.Text                           as T
 import           Data.Char                           ( toLower )
 import           Data.Ratio                          ( (%) )
 
-import           System.Exit                         (exitSuccess)
 import           System.Environment                  (lookupEnv)
-import           Data.Maybe                          (fromMaybe, isJust)
+import           Data.Maybe                          (fromMaybe)
 import           System.IO.Unsafe                    (unsafeDupablePerformIO)
 
 import qualified DBus as D
@@ -152,9 +150,9 @@ main = do
             checkKeymap myDesktopConfig myKeymap
             spawnOnce "stalonetray"
         }
-    else do xmonad . setEwmhActivateHook UH.doAskUrgent . ManageDocks.docks . ewmhFullscreen . ewmh $ UH.withUrgencyHook UH.NoUrgencyHook $ myDesktopConfig 
+    else do xmonad . setEwmhActivateHook UH.doAskUrgent . ManageDocks.docks . ewmhFullscreen . ewmh $ UH.withUrgencyHook UH.NoUrgencyHook $ myDesktopConfig
 
-        
+
 
 
 
@@ -274,11 +272,11 @@ myPolybarLogHook dbus = dynamicLogWithPP $ filterOutWsPP [scratchpadWorkspaceTag
     where
       -- Emit a DBus signal on log updates
       dbusOutput :: D.Client -> String -> IO ()
-      dbusOutput dbus str = do
+      dbusOutput dbus' str = do
           let signal = (D.signal objectPath interfaceName memberName) {
                   D.signalBody = [D.toVariant str]
               }
-          D.emit dbus signal
+          D.emit dbus' signal
         where
           objectPath = D.objectPath_ "/org/xmonad/Log"
           interfaceName = D.interfaceName_ "org.xmonad.Log"
@@ -658,18 +656,18 @@ fmtHint keyMap colorBinding colorDesc colorTitle maxChars =
     listKeyMap = buildKeyMap (buildColumns (map colDescription sortedKeymap)) emptyColRow
 
     colDesc ::  String -> String -> String -> Int -> [KeyHint] -> [String]
-    colDesc colorBinding colorDesc colorTitle colSize bindings=
-        (colStr colorTitle ++ rAlign colSize (getLabel bindings) ++ lAlign (colSize + 1) "") :
-        [ colStr colorBinding
-              ++ rAlign colSize key
+    colDesc colorBinding' colorDesc' colorTitle' colSize' bindings =
+        (colStr colorTitle' ++ rAlign colSize (getLabel bindings) ++ lAlign (colSize + 1) "") :
+        [ colStr colorBinding'
+              ++ rAlign colSize' key
               ++ " "
-              ++ colStr colorDesc
-              ++ lAlign colSize desc
+              ++ colStr colorDesc'
+              ++ lAlign colSize' desc
         | (key, _, desc) <- bindings
         ]
 
     charsPerCol :: Int -> Int
-    charsPerCol maxChars = quot (quot maxChars 3) 2 -- 3 columns by 2 (key, description)
+    charsPerCol maxChars' = quot (quot maxChars' 3) 2 -- 3 columns by 2 (key, description)
 
     getLabel :: [KeyHint] -> String
     getLabel ((_, label, _):_) =  show label
