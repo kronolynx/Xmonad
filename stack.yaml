@@ -44,12 +44,12 @@ packages:
 #
 extra-deps:
   - github: xmonad/x11
-    commit: 726157d268f49a32c064af011942e8aa936bdb48
+    commit: 481f2697c80aa54e1776ae36b24e63338dd6b98d
   - github: xmonad/xmonad
-    commit: d88643c63974b52521ae1464a72d3bf8104d8aad
+    commit: 83a8bb8d512afb043fb46decdbc029e7a3d25232
   - github: xmonad/xmonad-contrib
-    commit: 67243cbf7c0c3b4f7bebcc049bfe9b93128b698b
-  - xmobar-0.43
+    commit: 40171824cd22ff672274861b10af4cc8d7326717
+  - xmobar-0.44
 
 # Override default flag values for local packages and extra-deps
 flags:
