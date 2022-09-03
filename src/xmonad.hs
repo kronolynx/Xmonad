@@ -17,7 +17,7 @@ import qualified Theme.Theme                         as TH
 import           XMonad.Config.Desktop              (desktopConfig)
 
 -- hooks
-import           XMonad.Hooks.EwmhDesktops            ( ewmhFullscreen, ewmh, setEwmhActivateHook )
+import           XMonad.Hooks.EwmhDesktops            ( ewmhFullscreen, ewmh, setEwmhActivateHook, addEwmhWorkspaceSort )
 import           XMonad.Hooks.FloatNext               ( floatNextHook )
 import qualified XMonad.Hooks.ManageDocks            as ManageDocks
 import qualified XMonad.Hooks.ManageHelpers          as ManageHelpers
@@ -85,6 +85,7 @@ import           XMonad.Util.NamedScratchpad
                                                       NamedScratchpad(NS),
                                                       scratchpadWorkspaceTag
                                                       )
+import           XMonad.Util.WorkspaceCompare        (filterOutWs)
 
 import           Control.Monad                       ( liftM2 )
 import qualified Data.List                           as L
@@ -135,7 +136,7 @@ main = do
 
         let urgencyConfig = UH.UrgencyConfig UH.Focused UH.Dont
         let urgencyStyle = UH.BorderUrgencyHook TH.brightMagenta
-        xmonad . Hacks.javaHack .  setEwmhActivateHook UH.doAskUrgent . ManageDocks.docks . ewmhFullscreen . ewmh  $ UH.withUrgencyHookC urgencyStyle urgencyConfig myDesktopConfig {
+        xmonad . Hacks.javaHack . setEwmhActivateHook UH.doAskUrgent . ManageDocks.docks . ewmhFullscreen . ewmh  $ UH.withUrgencyHookC urgencyStyle urgencyConfig myDesktopConfig {
           startupHook = myStartupHook <+> do
             checkKeymap myDesktopConfig myKeymap
             spawnOnce "polybar bar-xmonad"
@@ -150,7 +151,9 @@ main = do
             checkKeymap myDesktopConfig myKeymap
             spawnOnce "stalonetray"
         }
-    else do xmonad . setEwmhActivateHook UH.doAskUrgent . ManageDocks.docks . ewmhFullscreen . ewmh $ UH.withUrgencyHook UH.NoUrgencyHook $ myDesktopConfig
+    else do xmonad . addEwmhWorkspaceSort (pure myFilter) . setEwmhActivateHook UH.doAskUrgent . ManageDocks.docks . ewmhFullscreen . ewmh $ UH.withUrgencyHook UH.NoUrgencyHook $ myDesktopConfig
+    where
+      myFilter = filterOutWs [scratchpadWorkspaceTag]
 
 
 
