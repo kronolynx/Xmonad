@@ -15,28 +15,28 @@ _current_x11=$(awk '/xmonad[/]x11$/{getline;print$2}' ./stack.yaml)
 _current_xmobar=$(awk -F "-" '/xmobar/{print$3}' ./stack.yaml | awk '!/^$/')
 
 if [ "$_latest_xmonad" != "$_current_xmonad" ]; then
-	sed -i "s/${_current_xmonad}/${_latest_xmonad}/" ./stack.yaml
+	sed -i --follow-symlinks "s/${_current_xmonad}/${_latest_xmonad}/" ./stack.yaml
 	printf 'upgraded xmonad to latest\n'
 else
 	printf 'xmonad is up-to-date\n'
 fi
 
 if [ "$_latest_contrib" != "$_current_contrib" ]; then
-	sed -i "s/${_current_contrib}/${_latest_contrib}/" ./stack.yaml
+	sed -i --follow-symlinks "s/${_current_contrib}/${_latest_contrib}/" ./stack.yaml
 	printf 'upgraded xmonad-contrib to latest\n'
 else
 	printf 'xmonad-contrib is up-to-date\n'
 fi
 
 if [ "$_latest_x11" != "$_current_x11" ]; then
-	sed -i "s/${_current_x11}/${_latest_x11}/" ./stack.yaml
+	sed -i --follow-symlinks "s/${_current_x11}/${_latest_x11}/" ./stack.yaml
 	printf 'upgraded xmonad/x11 to latest\n'
 else
 	printf 'xmonad/x11 is up-to-date\n'
 fi
 
 if [ "$_latest_xmobar" != "$_current_xmobar" ]; then
-	sed -i "s/${_current_xmobar}/${_latest_xmobar}/" ./stack.yaml
+	sed -i --follow-symlinks "s/${_current_xmobar}/${_latest_xmobar}/" ./stack.yaml
 	printf 'upgraded xmobar to latest\n'
 else
 	printf 'xmobar is up-to-date\n'
