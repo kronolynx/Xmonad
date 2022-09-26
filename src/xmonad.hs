@@ -999,12 +999,12 @@ myLauncherKeys' =
       , LauncherLabel
       , "Terminal"
       ) -- Launch terminal
-    , ( "M-S-<Return>"
+    , ( "M-e"
       , spawn myFileManager
       , LauncherLabel
       , "File Manager"
       ) -- Launch FileManager
-    , ( "M-C-<Return>"
+    , ( "M-S-e"
       , spawn myConsoleFileManager
       , LauncherLabel
       , "Vifm"
